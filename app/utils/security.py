@@ -9,10 +9,18 @@ password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
+    # Truncate password to 72 bytes if necessary (bcrypt limit)
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password = password_bytes[:72].decode('utf-8', errors='ignore')
     return password_context.hash(password)
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
+    # Truncate password to 72 bytes if necessary (bcrypt limit)
+    password_bytes = plain_password.encode('utf-8')
+    if len(password_bytes) > 72:
+        plain_password = password_bytes[:72].decode('utf-8', errors='ignore')
     return password_context.verify(plain_password, password_hash)
 
 
