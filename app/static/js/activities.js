@@ -1,5 +1,5 @@
 (function () {
-    const root = document.getElementById("activities-shell");
+    const root = document.getElementById("activities-app");
     if (!root || !window.Edupets) {
         return;
     }
