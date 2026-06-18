@@ -126,15 +126,26 @@ class GoogleSheetsRepository:
         return users
 
     def get_user(self, username: str) -> tuple[int, UserRecord] | None:
+        print(f"[DEBUG google_sheets] get_user - looking for: {username}")
         username_key = username.strip().lower()
         for row_number, user in self.list_users():
             if user.username.lower() == username_key:
+                print(f"[DEBUG google_sheets] get_user - FOUND at row {row_number}")
+                print(f"[DEBUG google_sheets] get_user - password_hash type: {type(user.password_hash)}, len: {len(user.password_hash)}")
+                print(f"[DEBUG google_sheets] get_user - password_hash first 50 chars: {user.password_hash[:50]}")
                 return row_number, user
+        print(f"[DEBUG google_sheets] get_user - NOT FOUND")
         return None
 
     def append_user(self, user: UserRecord) -> None:
+        print(f"[DEBUG google_sheets] append_user - username: {user.username}")
+        row = user.to_sheet_row()
+        print(f"[DEBUG google_sheets] append_user - row[0] (username): {row[0]}")
+        print(f"[DEBUG google_sheets] append_user - row[1] (password_hash) type: {type(row[1])}, len: {len(row[1])}")
+        print(f"[DEBUG google_sheets] append_user - row[1] first 50 chars: {row[1][:50]}")
         self.ensure_header()
-        self._values_append("A:I", [user.to_sheet_row()])
+        self._values_append("A:I", [row])
+        print(f"[DEBUG google_sheets] append_user - SUCCESS")
 
     def update_user(self, user: UserRecord) -> None:
         found = self.get_user(user.username)

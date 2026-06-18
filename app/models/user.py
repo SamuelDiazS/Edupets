@@ -36,8 +36,11 @@ class UserRecord(BaseModel):
 
     @classmethod
     def from_sheet_row(cls, row: list[Any]) -> "UserRecord":
+        print(f"[DEBUG from_sheet_row] START - row_len: {len(row)}")
         padded = [*row, *[""] * (9 - len(row))]
-        return cls(
+        print(f"[DEBUG from_sheet_row] padded[1] (password_hash) type: {type(padded[1])}, len: {len(str(padded[1]))}")
+        print(f"[DEBUG from_sheet_row] padded[1] first 50 chars: {str(padded[1])[:50]}")
+        result = cls(
             username=str(padded[0]).strip(),
             password_hash=str(padded[1]),
             coins=_parse_int(padded[2], 0),
@@ -48,6 +51,8 @@ class UserRecord(BaseModel):
             progress=_parse_json_dict(padded[7]),
             tasks=_parse_json_dict(padded[8]),
         )
+        print(f"[DEBUG from_sheet_row] SUCCESS - password_hash len: {len(result.password_hash)}")
+        return result
 
     def to_sheet_row(self) -> list[Any]:
         return [

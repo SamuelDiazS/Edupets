@@ -24,13 +24,19 @@ def validate_credentials(username: str, password: str) -> tuple[str, str]:
 
 
 def register_user(repo: GoogleSheetsRepository, username: str, password: str) -> UserRecord:
+    print(f"[DEBUG register_user] START - username: {username}, password_type: {type(password)}, password_len: {len(str(password))}")
     username, password = validate_credentials(username, password)
+    print(f"[DEBUG register_user] AFTER VALIDATE - username: {username}, password_len: {len(password)}")
     if repo.get_user(username):
         raise AuthServiceError("Ese usuario ya existe.")
 
+    print(f"[DEBUG register_user] CALLING hash_password with password_len: {len(password)}")
+    password_hash = hash_password(password)
+    print(f"[DEBUG register_user] GOT hash: {password_hash[:20]}... (len: {len(password_hash)})")
+    
     user = UserRecord(
         username=username,
-        password_hash=hash_password(password),
+        password_hash=password_hash,
         coins=0,
         happiness=100,
         food=100,
@@ -38,15 +44,20 @@ def register_user(repo: GoogleSheetsRepository, username: str, password: str) ->
         pet_name="Mi Mascota",
     )
     repo.append_user(user)
+    print(f"[DEBUG register_user] SUCCESS")
     return user
 
 
 def authenticate_user(repo: GoogleSheetsRepository, username: str, password: str) -> UserRecord:
+    print(f"[DEBUG authenticate_user] START - username: {username}, password_type: {type(password)}, password_len: {len(str(password))}")
     username = normalize_username(username)
     found = repo.get_user(username)
     if not found:
         raise AuthServiceError("Usuario o contraseña incorrectos.")
     _, user = found
+    print(f"[DEBUG authenticate_user] FOUND USER - password_hash_type: {type(user.password_hash)}, hash_len: {len(user.password_hash)}")
+    print(f"[DEBUG authenticate_user] CALLING verify_password")
     if not verify_password(password, user.password_hash):
         raise AuthServiceError("Usuario o contraseña incorrectos.")
+    print(f"[DEBUG authenticate_user] SUCCESS")
     return user
