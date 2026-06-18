@@ -23,6 +23,15 @@ SHOP_ITEMS: dict[str, dict[str, Any]] = {
         "effect": 20,
         "description": "+20 felicidad",
     },
+    "vive100": {
+        "id": "vive100",
+        "name": "Vive 100",
+        "image": "vive100.png",
+        "price": 25,
+        "stat": "sleep",
+        "effect": 20,
+        "description": "+20 sueño",
+    },
 }
 
 
