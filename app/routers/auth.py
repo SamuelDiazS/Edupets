@@ -61,6 +61,17 @@ async def login(request: Request, repo: GoogleSheetsRepository = Depends(get_rep
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )
+    except Exception as exc:
+        return templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "title": "Iniciar sesión",
+                "error": f"Error en el servidor: {str(exc)}",
+                "username": payload.get("username", ""),
+            },
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
     response = RedirectResponse("/pet", status_code=status.HTTP_303_SEE_OTHER)
     _set_session_cookie(response, user.username)
@@ -91,6 +102,17 @@ async def register(request: Request, repo: GoogleSheetsRepository = Depends(get_
                 "username": payload.get("username", ""),
             },
             status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exc:
+        return templates.TemplateResponse(
+            "register.html",
+            {
+                "request": request,
+                "title": "Registrarse",
+                "error": f"Error en el servidor: {str(exc)}",
+                "username": payload.get("username", ""),
+            },
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
     response = RedirectResponse("/pet", status_code=status.HTTP_303_SEE_OTHER)
