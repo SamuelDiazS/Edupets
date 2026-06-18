@@ -20,6 +20,8 @@ def validate_credentials(username: str, password: str) -> tuple[str, str]:
         raise AuthServiceError("El usuario no puede superar 30 caracteres.")
     if len(password) < 6:
         raise AuthServiceError("La contraseña debe tener al menos 6 caracteres.")
+    if len(password.encode('utf-8')) > 72:
+        raise AuthServiceError("La contraseña no puede exceder 72 bytes. Por favor, usa una contraseña más corta.")
     return username, password
 
 

@@ -4,20 +4,37 @@ El error "Error en el servidor" al registrarse indica que **las credenciales de 
 
 ## Pasos para Configurar Google Sheets
 
-### 1. Crear una Cuenta de Servicio en Google Cloud
+### 1. Habilitar Google Sheets API
+
+**⚠️ ESTE ES EL PASO MÁS IMPORTANTE**
+
+Si ves el error `SERVICE_DISABLED`, haz esto:
+
+1. Ve a tu Google Cloud Console y toma nota del `project_id` del error (ej: `731134327298`)
+2. Abre este enlace en una pestaña nueva:
+   ```
+   https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=TU_PROJECT_ID
+   ```
+   (Reemplaza `TU_PROJECT_ID` con el número que viste en el error)
+3. Haz clic en el botón azul **"HABILITAR"**
+4. Espera 1-2 minutos a que se propague
+5. Recarga la página de tu aplicación e intenta registrarte de nuevo
+
+### 2. Crear una Cuenta de Servicio en Google Cloud
 
 1. Ve a [Google Cloud Console](https://console.cloud.google.com/)
 2. Crea un nuevo proyecto o selecciona uno existente
-3. En la barra de búsqueda, busca "Google Sheets API"
-4. Haz clic en la API y presiona "Habilitar"
-5. Ve a "IAM y administración" > "Cuentas de servicio"
-6. Haz clic en "Crear una cuenta de servicio"
-7. Completa el nombre (ej: `edupets-service`)
-8. Haz clic en "Crear y continuar"
-9. Asigna el rol "Editor" (para poder escribir en hojas)
-10. Haz clic en "Continuar"
+3. **ANTES de continuar**, asegúrate de habilitar estas APIs:
+   - Google Sheets API (ver paso 1)
+   - Google Drive API (opcional, pero recomendado)
+4. Ve a "IAM y administración" > "Cuentas de servicio"
+5. Haz clic en "Crear una cuenta de servicio"
+6. Completa el nombre (ej: `edupets-service`)
+7. Haz clic en "Crear y continuar"
+8. Asigna el rol "Editor" (para poder escribir en hojas)
+9. Haz clic en "Continuar"
 
-### 2. Descargar la Clave JSON
+### 3. Descargar la Clave JSON
 
 1. En la página de cuentas de servicio, haz clic en la cuenta que acabas de crear
 2. Ve a la pestaña "Claves"
@@ -27,7 +44,7 @@ El error "Error en el servidor" al registrarse indica que **las credenciales de 
 6. Se descargará un archivo JSON automáticamente
 7. **Guarda este archivo en**: `credentials/service-account.json` (en la raíz del proyecto)
 
-### 3. Compartir la Hoja de Google Sheets
+### 4. Compartir la Hoja de Google Sheets
 
 1. Abre el archivo JSON descargado
 2. Copia el valor de `"client_email"` (algo como: `edupets-service@tu-proyecto.iam.gserviceaccount.com`)
@@ -38,7 +55,7 @@ El error "Error en el servidor" al registrarse indica que **las credenciales de 
 7. Desmarca "Notificar"
 8. Haz clic en "Compartir"
 
-### 4. Configurar Variables de Entorno
+### 5. Configurar Variables de Entorno
 
 En la raíz del proyecto, crea o edita el archivo `.env`:
 
@@ -53,7 +70,7 @@ GOOGLE_SHEET_NAME=Hoja 1
 GOOGLE_SERVICE_ACCOUNT_FILE=./credentials/service-account.json
 ```
 
-### 5. Estructura de Carpetas
+### 6. Estructura de Carpetas
 
 Asegúrate de que la estructura sea:
 
@@ -67,7 +84,7 @@ Edupets/
 └── ...
 ```
 
-### 6. Prueba de Conexión
+### 7. Prueba de Conexión
 
 Ejecuta el servidor:
 

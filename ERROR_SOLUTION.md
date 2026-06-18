@@ -1,98 +1,48 @@
 # 🔧 Solución: Error "Internal Server Error" al Crear Cuenta
 
-## Diagnóstico
+## 🚨 El Error Específico Que Ves
 
-El error `Internal Server Error` ocurre porque **las credenciales de Google Sheets no están configuradas correctamente** en el proyecto.
-
-### Causas Posibles:
-
-1. ❌ No existe el archivo `.env`
-2. ❌ No existe el archivo `credentials/service-account.json`
-3. ❌ Las variables `GOOGLE_SERVICE_ACCOUNT_FILE` o `GOOGLE_SERVICE_ACCOUNT_INFO` no están configuradas
-4. ❌ La hoja de Google Sheets no está compartida con la cuenta de servicio
-5. ❌ Las credenciales son inválidas o han expirado
-
-## Cambios Realizados
-
-### 1. ✅ Mejora en el Manejo de Errores
-- **app/routers/auth.py**: Ahora captura cualquier excepción no esperada y muestra un mensaje de error descriptivo
-- Los errores se muestran en la página de registro/login en lugar de retornar un "Internal Server Error" genérico
-
-### 2. ✅ Archivo de Instrucciones
-- **GOOGLE_SHEETS_SETUP.md**: Guía completa paso a paso para configurar Google Sheets
-
-### 3. ✅ Script de Verificación
-- **verify_config.py**: Script que verifica automáticamente la configuración
-
-## Pasos para Solucionar el Problema
-
-### Opción A: Verificación Rápida (Recomendado)
-
-```bash
-# En la raíz del proyecto
-python verify_config.py
+```
+Error en el servidor: <HttpError 403 when requesting https://sheets.googleapis.com/v4/spreadsheets/...
+Google Sheets API has not been used in project 731134327298 before or it is disabled.
+Enable it by visiting https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=731134327298
 ```
 
-El script te dirá exactamente qué está faltando.
+## ✅ Solución Inmediata (2 minutos)
 
-### Opción B: Configuración Manual
+### Paso 1: Habilitar Google Sheets API
 
-Sigue los pasos en **GOOGLE_SHEETS_SETUP.md**:
+**Tu proyecto 731134327298 tiene la API deshabilitada. Necesitas habilitarla:**
 
-1. Crea una Cuenta de Servicio en Google Cloud Console
-2. Descarga el archivo JSON
-3. Guárdalo en `credentials/service-account.json`
-4. Comparte la hoja de Google Sheets con el email de la cuenta de servicio
-5. Configura el archivo `.env` con:
-   ```env
-   GOOGLE_SHEET_ID=1PLOtpKWiyxJLtEjQjkxQZYVtydn00eSwmpliR8aXPVw
-   GOOGLE_SERVICE_ACCOUNT_FILE=./credentials/service-account.json
+1. **Abre este enlace** (copia y pega en tu navegador):
+   ```
+   https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=731134327298
    ```
 
-### Opción C: Si Usas Vercel (Despliegue)
+2. **Haz clic en el botón azul "HABILITAR"** en la parte superior
 
-En lugar de usar un archivo, usa una variable de entorno:
+3. **Espera 1-2 minutos** a que Google propague el cambio
 
-```env
-GOOGLE_SERVICE_ACCOUNT_INFO={"type":"service_account","project_id":"..."}
-```
+4. **Vuelve a tu aplicación** e intenta registrarte de nuevo
 
-(Pega el contenido completo del JSON)
+### Paso 2: Si Aún No Funciona
 
-## Cómo Saber si Está Funcionando
+Si sigue sin funcionar después de 2 minutos:
 
-1. Inicia el servidor: `fastapi dev app/main.py`
-2. Ve a http://127.0.0.1:8000
-3. Haz clic en "Registrarse"
-4. Intenta crear una cuenta con:
-   - Usuario: `testuser`
-   - Contraseña: `password123`
+1. Actualiza la página de tu aplicación con `F5`
+2. Intenta registrarte de nuevo
+3. Si aún no funciona, limpia el navegador (cookies, caché):
+   - En Chrome: `Ctrl + Shift + Delete`
+   - En Firefox: `Ctrl + Shift + Delete`
+   - En Edge: `Ctrl + Shift + Delete`
 
-### ✅ Si funciona:
-- Se redirige a `/pet` automáticamente
-- Ves la página con tu mascota
+## 📋 Resumen de Toda la Configuración
 
-### ❌ Si no funciona:
-- Ves un mensaje de error descriptivo
-- Sigue los pasos de solución
+Si esto no funciona, sigue **GOOGLE_SHEETS_SETUP.md** paso por paso:
 
-## Archivos Modificados
-
-| Archivo | Cambio |
-|---------|--------|
-| `app/routers/auth.py` | +30 líneas: Mejor manejo de errores en login y registro |
-| `GOOGLE_SHEETS_SETUP.md` | ✨ NUEVO: Guía completa de configuración |
-| `verify_config.py` | ✨ NUEVO: Script de verificación automática |
-
-## Resumen
-
-El proyecto está **funcionalmente completo**, solo necesita que configures las credenciales de Google Sheets. 
-
-Una vez que lo hagas, la aplicación:
-- ✅ Registrará usuarios en Google Sheets
-- ✅ Autenticará el login
-- ✅ Guardará la mascota y sus estadísticas
-- ✅ Permitirá completar actividades
-- ✅ Funcionará en Vercel
-
-**¡Sigue el archivo GOOGLE_SHEETS_SETUP.md para completar la configuración!**
+1. ✅ **Habilitar Google Sheets API** (ES LO QUE ACABAS DE HACER)
+2. Crear una Cuenta de Servicio en Google Cloud
+3. Descargar la Clave JSON
+4. Compartir la Hoja de Google Sheets
+5. Configurar variables de entorno
+6. Prueba de conexión
