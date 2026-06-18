@@ -8,7 +8,7 @@ SHOP_ITEMS: dict[str, dict[str, Any]] = {
     "pollo": {
         "id": "pollo",
         "name": "Pollo",
-        "image": "comida.png",
+        "image": "pescado.png",
         "price": 20,
         "stat": "food",
         "effect": 20,
@@ -17,7 +17,7 @@ SHOP_ITEMS: dict[str, dict[str, Any]] = {
     "juguete": {
         "id": "juguete",
         "name": "Juguete",
-        "image": "felicidad.png",
+        "image": "juguete.png",
         "price": 30,
         "stat": "happiness",
         "effect": 20,
