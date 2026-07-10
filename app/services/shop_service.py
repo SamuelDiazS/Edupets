@@ -8,7 +8,7 @@ SHOP_ITEMS: dict[str, dict[str, Any]] = {
     "pollo": {
         "id": "pollo",
 <<<<<<< HEAD
-        "name": "Comida",
+        "name": "comida",
 =======
         "name": "comida",
 >>>>>>> f38fc52e28e85228b8e564fdb1c9a440bb65ead3
