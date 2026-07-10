@@ -7,7 +7,7 @@ from app.services.pet_service import clamp_stat
 SHOP_ITEMS: dict[str, dict[str, Any]] = {
     "pollo": {
         "id": "pollo",
-        "name": "Pollo",
+        "name": "Comida",
         "image": "pescado.png",
         "price": 20,
         "stat": "food",
