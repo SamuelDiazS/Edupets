@@ -249,7 +249,7 @@ INSERT INTO producto (nombre, precio)
 VALUES
     ('Comida', 20),
     ('Juguete', 30),
-    ('Vive 100', 25)
+    ('caramelos', 25)
 ON CONFLICT (nombre) DO NOTHING;
 
 
