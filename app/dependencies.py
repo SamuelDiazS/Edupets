@@ -3,6 +3,7 @@ from functools import lru_cache
 from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status
+from starlette.concurrency import run_in_threadpool
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
@@ -70,7 +71,7 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No autenticado.")
 
     try:
-        found = repo.get_user(username)
+        found = await run_in_threadpool(repo.get_user, username)
     except GoogleSheetsError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 

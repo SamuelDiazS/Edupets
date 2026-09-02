@@ -1,4 +1,5 @@
 import json
+import threading
 from functools import cached_property
 from typing import Any
 
@@ -26,6 +27,7 @@ class GoogleSheetsError(RuntimeError):
 class GoogleSheetsRepository:
     def __init__(self, settings: Settings):
         self.settings = settings
+        self._write_lock = threading.RLock()
 
     @cached_property
     def service(self) -> Any:
@@ -71,40 +73,49 @@ class GoogleSheetsRepository:
         return f"'{self.sheet_name}'!{a1_range}"
 
     def _values_get(self, a1_range: str) -> list[list[Any]]:
-        result = (
-            self.service.spreadsheets()
-            .values()
-            .get(spreadsheetId=self.settings.GOOGLE_SHEET_ID, range=self._range(a1_range))
-            .execute()
-        )
+        try:
+            result = (
+                self.service.spreadsheets()
+                .values()
+                .get(spreadsheetId=self.settings.GOOGLE_SHEET_ID, range=self._range(a1_range))
+                .execute()
+            )
+        except Exception as exc:
+            raise GoogleSheetsError("No se pudo consultar Google Sheets.") from exc
         return result.get("values", [])
 
     def _values_update(self, a1_range: str, values: list[list[Any]]) -> None:
-        (
-            self.service.spreadsheets()
-            .values()
-            .update(
-                spreadsheetId=self.settings.GOOGLE_SHEET_ID,
-                range=self._range(a1_range),
-                valueInputOption="RAW",
-                body={"values": values},
+        try:
+            (
+                self.service.spreadsheets()
+                .values()
+                .update(
+                    spreadsheetId=self.settings.GOOGLE_SHEET_ID,
+                    range=self._range(a1_range),
+                    valueInputOption="RAW",
+                    body={"values": values},
+                )
+                .execute()
             )
-            .execute()
-        )
+        except Exception as exc:
+            raise GoogleSheetsError("No se pudo actualizar Google Sheets.") from exc
 
     def _values_append(self, a1_range: str, values: list[list[Any]]) -> None:
-        (
-            self.service.spreadsheets()
-            .values()
-            .append(
-                spreadsheetId=self.settings.GOOGLE_SHEET_ID,
-                range=self._range(a1_range),
-                valueInputOption="RAW",
-                insertDataOption="INSERT_ROWS",
-                body={"values": values},
+        try:
+            (
+                self.service.spreadsheets()
+                .values()
+                .append(
+                    spreadsheetId=self.settings.GOOGLE_SHEET_ID,
+                    range=self._range(a1_range),
+                    valueInputOption="RAW",
+                    insertDataOption="INSERT_ROWS",
+                    body={"values": values},
+                )
+                .execute()
             )
-            .execute()
-        )
+        except Exception as exc:
+            raise GoogleSheetsError("No se pudo agregar información a Google Sheets.") from exc
 
     def ensure_header(self) -> None:
         rows = self._values_get("A1:I1")
@@ -133,12 +144,14 @@ class GoogleSheetsRepository:
         return None
 
     def append_user(self, user: UserRecord) -> None:
-        self.ensure_header()
-        self._values_append("A:I", [user.to_sheet_row()])
+        with self._write_lock:
+            self.ensure_header()
+            self._values_append("A:I", [user.to_sheet_row()])
 
     def update_user(self, user: UserRecord) -> None:
-        found = self.get_user(user.username)
-        if not found:
-            raise GoogleSheetsError(f"No se encontro el usuario {user.username}.")
-        row_number, _ = found
-        self._values_update(f"A{row_number}:I{row_number}", [user.to_sheet_row()])
+        with self._write_lock:
+            found = self.get_user(user.username)
+            if not found:
+                raise GoogleSheetsError(f"No se encontro el usuario {user.username}.")
+            row_number, _ = found
+            self._values_update(f"A{row_number}:I{row_number}", [user.to_sheet_row()])

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from starlette.concurrency import run_in_threadpool
 
 from app.dependencies import (
     get_current_user,
@@ -40,7 +41,7 @@ async def buy_shop_item(
     payload = await request_payload(request)
     try:
         item = buy_item(user, str(payload.get("item_id", "")))
-        repo.update_user(user)
+        await run_in_threadpool(repo.update_user, user)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except GoogleSheetsError as exc:

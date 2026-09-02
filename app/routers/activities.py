@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from starlette.concurrency import run_in_threadpool
 
 from app.dependencies import (
     get_current_user,
@@ -50,7 +51,7 @@ async def complete_activity(
         level = int(payload.get("level", 0))
         correct_count = int(payload.get("correct_count", 0))
         result = record_level_completion(user, module, level, correct_count)
-        repo.update_user(user)
+        await run_in_threadpool(repo.update_user, user)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except GoogleSheetsError as exc:
