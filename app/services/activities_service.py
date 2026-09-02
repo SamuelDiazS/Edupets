@@ -87,10 +87,10 @@ def record_level_completion(
     completed_levels = set(progress["completed"][module])
     reward = 0
 
+    reward += 10 + level * 2
     if level not in completed_levels:
         completed_levels.add(level)
         progress["completed"][module] = sorted(completed_levels)
-        reward += 10 + level * 2
 
     if module in tasks:
         task = tasks[module]
