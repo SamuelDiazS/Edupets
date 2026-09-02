@@ -1,7 +1,8 @@
+import logging
 import secrets
 
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
@@ -10,6 +11,7 @@ from app.routers import activities, auth, pet, shop
 from app.utils.security import decode_access_token
 
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 app = FastAPI(title=settings.APP_NAME)
 
@@ -62,3 +64,12 @@ async def health():
 async def redirect_exception_handler(request: Request, exc):  # pragma: no cover
     location = exc.headers.get("Location", "/login")
     return RedirectResponse(location, status_code=303)
+
+
+@app.exception_handler(Exception)
+async def unexpected_exception_handler(request: Request, exc: Exception):
+    logger.exception("Error no controlado en %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Error interno del servidor."},
+    )

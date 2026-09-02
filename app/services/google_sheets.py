@@ -1,10 +1,13 @@
 import json
+import logging
 import threading
-from functools import cached_property
 from typing import Any
 
 from app.config import Settings
 from app.models.user import UserRecord
+
+
+logger = logging.getLogger(__name__)
 
 
 SHEET_HEADER = [
@@ -27,31 +30,36 @@ class GoogleSheetsError(RuntimeError):
 class GoogleSheetsRepository:
     def __init__(self, settings: Settings):
         self.settings = settings
-        self._write_lock = threading.RLock()
+        self._service: Any | None = None
+        self._service_lock = threading.RLock()
 
-    @cached_property
+    @property
     def service(self) -> Any:
-        try:
-            from google.oauth2 import service_account
-            from googleapiclient.discovery import build
-        except ImportError as exc:
-            raise GoogleSheetsError(
-                "Faltan dependencias de Google Sheets. Ejecuta `pip install -r requirements.txt`."
-            ) from exc
+        with self._service_lock:
+            if self._service is None:
+                try:
+                    from google.oauth2 import service_account
+                    from googleapiclient.discovery import build
+                except ImportError as exc:
+                    raise GoogleSheetsError(
+                        "Faltan dependencias de Google Sheets. Ejecuta `pip install -r requirements.txt`."
+                    ) from exc
 
-        credentials_payload = self._credentials_payload()
-        if isinstance(credentials_payload, dict):
-            credentials = service_account.Credentials.from_service_account_info(
-                credentials_payload,
-                scopes=self.settings.google_scopes,
-            )
-        else:
-            credentials = service_account.Credentials.from_service_account_file(
-                credentials_payload,
-                scopes=self.settings.google_scopes,
-            )
+                credentials_payload = self._credentials_payload()
+                if isinstance(credentials_payload, dict):
+                    credentials = service_account.Credentials.from_service_account_info(
+                        credentials_payload,
+                        scopes=self.settings.google_scopes,
+                    )
+                else:
+                    credentials = service_account.Credentials.from_service_account_file(
+                        credentials_payload,
+                        scopes=self.settings.google_scopes,
+                    )
 
-        return build("sheets", "v4", credentials=credentials, cache_discovery=False)
+                self._service = build("sheets", "v4", credentials=credentials, cache_discovery=False)
+                logger.info("Cliente de Google Sheets inicializado para la hoja configurada")
+            return self._service
 
     def _credentials_payload(self) -> dict[str, Any] | str:
         if self.settings.GOOGLE_SERVICE_ACCOUNT_INFO:
@@ -73,49 +81,58 @@ class GoogleSheetsRepository:
         return f"'{self.sheet_name}'!{a1_range}"
 
     def _values_get(self, a1_range: str) -> list[list[Any]]:
-        try:
-            result = (
-                self.service.spreadsheets()
-                .values()
-                .get(spreadsheetId=self.settings.GOOGLE_SHEET_ID, range=self._range(a1_range))
-                .execute()
-            )
-        except Exception as exc:
-            raise GoogleSheetsError("No se pudo consultar Google Sheets.") from exc
+        with self._service_lock:
+            try:
+                result = (
+                    self.service.spreadsheets()
+                    .values()
+                    .get(spreadsheetId=self.settings.GOOGLE_SHEET_ID, range=self._range(a1_range))
+                    .execute()
+                )
+            except Exception as exc:
+                logger.exception("Error leyendo Google Sheets en el rango %s", a1_range)
+                raise GoogleSheetsError("No se pudo consultar Google Sheets.") from exc
+        logger.info("Lectura de Google Sheets completada: rango %s", a1_range)
         return result.get("values", [])
 
     def _values_update(self, a1_range: str, values: list[list[Any]]) -> None:
-        try:
-            (
-                self.service.spreadsheets()
-                .values()
-                .update(
-                    spreadsheetId=self.settings.GOOGLE_SHEET_ID,
-                    range=self._range(a1_range),
-                    valueInputOption="RAW",
-                    body={"values": values},
+        with self._service_lock:
+            try:
+                (
+                    self.service.spreadsheets()
+                    .values()
+                    .update(
+                        spreadsheetId=self.settings.GOOGLE_SHEET_ID,
+                        range=self._range(a1_range),
+                        valueInputOption="RAW",
+                        body={"values": values},
+                    )
+                    .execute()
                 )
-                .execute()
-            )
-        except Exception as exc:
-            raise GoogleSheetsError("No se pudo actualizar Google Sheets.") from exc
+            except Exception as exc:
+                logger.exception("Error actualizando Google Sheets en el rango %s", a1_range)
+                raise GoogleSheetsError("No se pudo actualizar Google Sheets.") from exc
+        logger.info("Actualización de Google Sheets completada: rango %s", a1_range)
 
     def _values_append(self, a1_range: str, values: list[list[Any]]) -> None:
-        try:
-            (
-                self.service.spreadsheets()
-                .values()
-                .append(
-                    spreadsheetId=self.settings.GOOGLE_SHEET_ID,
-                    range=self._range(a1_range),
-                    valueInputOption="RAW",
-                    insertDataOption="INSERT_ROWS",
-                    body={"values": values},
+        with self._service_lock:
+            try:
+                (
+                    self.service.spreadsheets()
+                    .values()
+                    .append(
+                        spreadsheetId=self.settings.GOOGLE_SHEET_ID,
+                        range=self._range(a1_range),
+                        valueInputOption="RAW",
+                        insertDataOption="INSERT_ROWS",
+                        body={"values": values},
+                    )
+                    .execute()
                 )
-                .execute()
-            )
-        except Exception as exc:
-            raise GoogleSheetsError("No se pudo agregar información a Google Sheets.") from exc
+            except Exception as exc:
+                logger.exception("Error agregando información en Google Sheets en %s", a1_range)
+                raise GoogleSheetsError("No se pudo agregar información a Google Sheets.") from exc
+        logger.info("Inserción en Google Sheets completada: rango %s", a1_range)
 
     def ensure_header(self) -> None:
         rows = self._values_get("A1:I1")
@@ -144,12 +161,12 @@ class GoogleSheetsRepository:
         return None
 
     def append_user(self, user: UserRecord) -> None:
-        with self._write_lock:
+        with self._service_lock:
             self.ensure_header()
             self._values_append("A:I", [user.to_sheet_row()])
 
     def update_user(self, user: UserRecord) -> None:
-        with self._write_lock:
+        with self._service_lock:
             found = self.get_user(user.username)
             if not found:
                 raise GoogleSheetsError(f"No se encontro el usuario {user.username}.")

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from starlette.concurrency import run_in_threadpool
@@ -12,6 +14,7 @@ from app.utils.security import create_access_token
 
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _set_session_cookie(response: RedirectResponse, username: str) -> None:
@@ -131,6 +134,7 @@ async def logout(
     user: UserRecord = Depends(get_current_user),
     repo: GoogleSheetsRepository = Depends(get_repository),
 ):
+    logger.info("Cierre de sesión iniciado para usuario %s", user.username)
     await verify_csrf(request)
     payload = await request_payload(request)
     if payload:
@@ -142,4 +146,5 @@ async def logout(
 
     response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
     _delete_session_cookie(response)
+    logger.info("Cierre de sesión completado para usuario %s", user.username)
     return response

@@ -1,3 +1,4 @@
+import logging
 import secrets
 from functools import lru_cache
 from typing import Any
@@ -15,6 +16,7 @@ from app.utils.security import decode_access_token
 
 settings = get_settings()
 templates = Jinja2Templates(directory=str(settings.TEMPLATES_DIR))
+logger = logging.getLogger(__name__)
 
 
 @lru_cache
@@ -71,9 +73,16 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No autenticado.")
 
     try:
+        logger.info("Buscando usuario autenticado %s en Google Sheets", username)
         found = await run_in_threadpool(repo.get_user, username)
     except GoogleSheetsError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Error obteniendo el usuario autenticado %s", username)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No se pudo cargar la sesión.",
+        ) from exc
 
     if not found:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario no encontrado.")
