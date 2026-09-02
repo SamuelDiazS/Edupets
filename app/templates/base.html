@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ request.state.csrf_token }}">
     <title>{{ title or "Edupets" }}</title>
+    <script>
+        try {
+            if (localStorage.getItem("edupets_theme") === "dark") {
+                document.documentElement.dataset.theme = "dark";
+            }
+        } catch {
+        }
+    </script>
     <link rel="icon" href="{{ url_for('static', path='images/logo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
     {% block head %}{% endblock %}
@@ -16,6 +24,9 @@
             <span>Edupets</span>
         </a>
         <nav class="main-nav" aria-label="Principal">
+            <button class="theme-toggle" type="button" aria-label="Activar modo oscuro" aria-pressed="false" title="Cambiar tema">
+                <span aria-hidden="true">☾</span>
+            </button>
             {% if request.state.username %}
                 <a href="/pet">Mascota</a>
                 <a href="/activities">Actividades</a>

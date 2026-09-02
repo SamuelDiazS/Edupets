@@ -1,6 +1,29 @@
 (function () {
+    const themeToggle = document.querySelector(".theme-toggle");
     const csrfMeta = document.querySelector('meta[name="csrf-token"]');
     const csrfToken = csrfMeta ? csrfMeta.content : "";
+
+    function setTheme(theme) {
+        const isDark = theme === "dark";
+        document.documentElement.dataset.theme = isDark ? "dark" : "light";
+        if (themeToggle) {
+            themeToggle.setAttribute("aria-pressed", String(isDark));
+            themeToggle.setAttribute("aria-label", isDark ? "Activar modo claro" : "Activar modo oscuro");
+            themeToggle.querySelector("span").textContent = isDark ? "☀" : "☾";
+        }
+    }
+
+    if (themeToggle) {
+        setTheme(document.documentElement.dataset.theme || "light");
+        themeToggle.addEventListener("click", () => {
+            const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+            setTheme(nextTheme);
+            try {
+                localStorage.setItem("edupets_theme", nextTheme);
+            } catch {
+            }
+        });
+    }
 
     function clamp(value, min = 0, max = 100) {
         const number = Number.parseInt(value, 10);

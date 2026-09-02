@@ -11,7 +11,28 @@
     --coral: #ff7b6e;
     --violet: #7c6cf2;
     --line: #d7e7f2;
+    --input-bg: #ffffff;
+    --topbar-bg: rgba(255, 255, 255, 0.92);
+    --soft-blue: #e8f7ff;
+    --welcome-art-bg: #dff5ff;
+    --stage-bg: linear-gradient(#ecf9ff, #ffffff);
     --shadow: 0 16px 36px rgba(24, 50, 71, 0.11);
+}
+
+:root[data-theme="dark"] {
+    --bg: #14212b;
+    --panel: #1e303d;
+    --panel-soft: #253d4c;
+    --ink: #edf7fb;
+    --muted: #a9bfca;
+    --primary-dark: #64c8ee;
+    --line: #385362;
+    --input-bg: #182934;
+    --topbar-bg: rgba(20, 33, 43, 0.94);
+    --soft-blue: #203f50;
+    --welcome-art-bg: #1d3c4c;
+    --stage-bg: linear-gradient(#1b3b4c, #1e303d);
+    --shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
 }
 
 * {
@@ -64,7 +85,7 @@ img {
     gap: 16px;
     min-height: 72px;
     padding: 12px clamp(16px, 4vw, 48px);
-    background: rgba(255, 255, 255, 0.92);
+    background: var(--topbar-bg);
     border-bottom: 1px solid var(--line);
     backdrop-filter: blur(14px);
 }
@@ -111,6 +132,25 @@ img {
     background: var(--panel-soft);
 }
 
+.theme-toggle {
+    width: 40px;
+    height: 40px;
+    display: inline-grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--ink);
+    background: var(--panel-soft);
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.theme-toggle:hover {
+    border-color: var(--primary);
+    color: var(--primary-dark);
+}
+
 .nav-button {
     color: var(--primary-dark);
     border-color: #bdeaff;
@@ -147,7 +187,7 @@ main {
 
 .secondary-button {
     color: var(--primary-dark);
-    background: #e8f7ff;
+    background: var(--soft-blue);
     border: 1px solid #beeaff;
 }
 
@@ -189,7 +229,7 @@ main {
     position: absolute;
     inset: 12% 8%;
     border-radius: 999px;
-    background: #dff5ff;
+    background: var(--welcome-art-bg);
     border: 1px solid #bdeaff;
 }
 
@@ -264,7 +304,7 @@ main {
     border: 2px solid var(--line);
     border-radius: 8px;
     outline: none;
-    background: #ffffff;
+    background: var(--input-bg);
     color: var(--ink);
     font-weight: 800;
 }
@@ -410,7 +450,7 @@ main {
     display: grid;
     place-items: center;
     border-radius: 8px;
-    background: linear-gradient(#ecf9ff, #ffffff);
+    background: var(--stage-bg);
     border: 1px solid var(--line);
     overflow: hidden;
 }
@@ -624,7 +664,7 @@ main {
     min-height: 54px;
     border: 2px solid var(--line);
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--input-bg);
     color: var(--ink);
     font-size: 1.2rem;
     font-weight: 900;
