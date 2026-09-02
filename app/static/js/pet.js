@@ -16,6 +16,8 @@
     const coinsNode = root.querySelector('[data-role="coins"]');
     const tasksList = document.getElementById("tasks-list");
     let nameTimer = null;
+    let syncInFlight = null;
+    let lastBeaconAt = 0;
 
     function renderStats() {
         statNames.forEach((stat) => {
@@ -79,6 +81,14 @@
     }
 
     async function syncNow(useBeacon = false) {
+        if (useBeacon) {
+            if (Date.now() - lastBeaconAt < 1000) {
+                return;
+            }
+            lastBeaconAt = Date.now();
+        } else if (syncInFlight) {
+            return syncInFlight;
+        }
         state = Edupets.applyElapsedDecay(state);
         Edupets.saveState(username, state);
         const payload = buildPayload();
@@ -89,12 +99,18 @@
             return;
         }
 
-        const response = await Edupets.api("/api/pet/sync", {
+        syncInFlight = Edupets.api("/api/pet/sync", {
             method: "POST",
             body: JSON.stringify(payload),
-        });
-        state = Edupets.applyServerSnapshot(username, response.user);
-        render();
+        })
+            .then((response) => {
+                state = Edupets.applyServerSnapshot(username, response.user);
+                render();
+            })
+            .finally(() => {
+                syncInFlight = null;
+            });
+        return syncInFlight;
     }
 
     async function saveName() {

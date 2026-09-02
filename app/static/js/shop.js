@@ -27,6 +27,10 @@
     }
 
     async function buy(itemId) {
+        const button = root.querySelector(`.buy-button[data-item-id="${itemId}"]`);
+        if (button) {
+            button.disabled = true;
+        }
         if (messageNode) {
             messageNode.textContent = "";
         }

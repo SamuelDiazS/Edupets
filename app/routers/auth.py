@@ -56,7 +56,7 @@ async def login(request: Request, repo: GoogleSheetsRepository = Depends(get_rep
         user = await run_in_threadpool(
             authenticate_user, repo, str(payload.get("username", "")), str(payload.get("password", ""))
         )
-    except (AuthServiceError, GoogleSheetsError) as exc:
+    except AuthServiceError as exc:
         return templates.TemplateResponse(
             "login.html",
             {
@@ -67,6 +67,8 @@ async def login(request: Request, repo: GoogleSheetsRepository = Depends(get_rep
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )
+    except GoogleSheetsError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except Exception as exc:
         return templates.TemplateResponse(
             "login.html",
@@ -100,7 +102,7 @@ async def register(request: Request, repo: GoogleSheetsRepository = Depends(get_
         user = await run_in_threadpool(
             register_user, repo, str(payload.get("username", "")), str(payload.get("password", ""))
         )
-    except (AuthServiceError, GoogleSheetsError) as exc:
+    except AuthServiceError as exc:
         return templates.TemplateResponse(
             "register.html",
             {
@@ -111,6 +113,8 @@ async def register(request: Request, repo: GoogleSheetsRepository = Depends(get_
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )
+    except GoogleSheetsError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except Exception as exc:
         return templates.TemplateResponse(
             "register.html",

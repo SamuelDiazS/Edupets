@@ -6,7 +6,9 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
-from app.dependencies import new_csrf_token, templates
+from app.dependencies import get_repository, new_csrf_token, templates
+from app.services.google_sheets import GoogleSheetsError, request_endpoint
+from starlette.concurrency import run_in_threadpool
 from app.routers import activities, auth, pet, shop
 from app.utils.security import decode_access_token
 
@@ -24,6 +26,7 @@ app.include_router(shop.router)
 
 @app.middleware("http")
 async def session_context_middleware(request: Request, call_next):
+    endpoint_token = request_endpoint.set(f"{request.method} {request.url.path}")
     csrf_token = request.cookies.get(settings.CSRF_COOKIE_NAME) or new_csrf_token()
     request.state.csrf_token = csrf_token
     request.state.username = None
@@ -34,17 +37,20 @@ async def session_context_middleware(request: Request, call_next):
         if payload:
             request.state.username = payload.get("sub")
 
-    response = await call_next(request)
-    if not request.cookies.get(settings.CSRF_COOKIE_NAME):
-        response.set_cookie(
-            settings.CSRF_COOKIE_NAME,
-            csrf_token,
-            httponly=False,
-            secure=settings.COOKIE_SECURE,
-            samesite="lax",
-            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        )
-    return response
+    try:
+        response = await call_next(request)
+        if not request.cookies.get(settings.CSRF_COOKIE_NAME):
+            response.set_cookie(
+                settings.CSRF_COOKIE_NAME,
+                csrf_token,
+                httponly=False,
+                secure=settings.COOKIE_SECURE,
+                samesite="lax",
+                max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            )
+        return response
+    finally:
+        request_endpoint.reset(endpoint_token)
 
 
 @app.get("/")
@@ -58,6 +64,18 @@ async def index(request: Request):
 @app.get("/health")
 async def health():
     return {"status": "ok", "app": settings.APP_NAME}
+
+
+@app.get("/health/google-sheets")
+async def google_sheets_health():
+    try:
+        await run_in_threadpool(get_repository().check_connection)
+    except GoogleSheetsError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "unavailable", "detail": str(exc)},
+        )
+    return {"status": "ok", "spreadsheet_accessible": True, "sheet_configured": True}
 
 
 @app.exception_handler(303)
