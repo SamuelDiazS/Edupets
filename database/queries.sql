@@ -1,24 +1,29 @@
 -- Registra al usuario y devuelve su identificador para crear su mascota.
+-- Tabla: usuario
 INSERT INTO usuario (nombre)
 VALUES (:nombre)
 RETURNING id, nombre;
 
 -- Guarda el usuario de login y su hash después de crear el registro principal.
+-- Tabla: credenciales
 INSERT INTO credenciales (usuario, contrasena, usuario_id)
 VALUES (:usuario, :contrasena_hash, :usuario_id)
 RETURNING id, usuario, usuario_id;
 
 -- Crea la mascota inicial asociada al usuario recien registrado.
+-- Tabla: mascota
 INSERT INTO mascota (nombre, comida, sueno, felicidad, usuario_id)
 VALUES (:nombre_mascota, 100, 100, 100, :usuario_id)
 RETURNING id, nombre, comida, sueno, felicidad, usuario_id;
 
 -- Busca el hash necesario para autenticar al usuario por su nombre de login.
+-- Tabla: credenciales
 SELECT c.usuario_id, c.usuario, c.contrasena
 FROM credenciales AS c
 WHERE c.usuario = :usuario;
 
 -- Carga el perfil y el estado de la mascota para las pantallas autenticadas.
+-- Tablas: usuario y mascota
 SELECT
     u.id AS usuario_id,
     u.nombre AS usuario,
@@ -33,6 +38,7 @@ WHERE u.id = :usuario_id;
 
 -- Guarda en una sola operacion el estado que el backend modifica:
 -- nombre de mascota y sus tres estadisticas.
+-- Tabla: mascota
 UPDATE mascota
 SET nombre = :nombre_mascota,
     comida = :comida,
@@ -42,6 +48,7 @@ WHERE usuario_id = :usuario_id
 RETURNING id, nombre, comida, sueno, felicidad, usuario_id;
 
 -- Lista los productos disponibles para mostrar la tienda.
+-- Tabla: producto
 SELECT id, nombre, precio
 FROM producto
 ORDER BY id;
