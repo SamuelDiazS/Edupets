@@ -52,3 +52,68 @@ RETURNING id, nombre, comida, sueno, felicidad, usuario_id;
 SELECT id, nombre, precio
 FROM producto
 ORDER BY id;
+
+-- Lista las actividades disponibles.
+-- Tabla: ejercicio
+SELECT id, tipo, operacion
+FROM ejercicio
+ORDER BY id;
+
+-- Crea el monedero del usuario al registrarlo.
+-- Tabla: monedero
+INSERT INTO monedero (usuario_id, saldo_plata)
+VALUES (:usuario_id, 0)
+RETURNING id_monedero, usuario_id, saldo_plata, ultima_actualizacion;
+
+-- Consulta el saldo disponible del usuario.
+-- Tabla: monedero
+SELECT id_monedero, usuario_id, saldo_plata, ultima_actualizacion
+FROM monedero
+WHERE usuario_id = :usuario_id;
+
+-- Actualiza el saldo después de una recompensa o una compra.
+-- Tabla: monedero
+UPDATE monedero
+SET saldo_plata = :saldo_plata,
+    ultima_actualizacion = CURRENT_TIMESTAMP
+WHERE usuario_id = :usuario_id
+RETURNING id_monedero, usuario_id, saldo_plata, ultima_actualizacion;
+
+-- Registra un estado histórico de la mascota.
+-- Tabla: progreso
+INSERT INTO progreso (comida, sueno, felicidad, mascota_id)
+VALUES (:comida, :sueno, :felicidad, :mascota_id)
+RETURNING id, comida, sueno, felicidad, mascota_id;
+
+-- Registra el resultado de una actividad.
+-- Tablas: resultado, mascota y ejercicio
+INSERT INTO resultado (puntaje, mascota_id, ejercicio_id)
+VALUES (:puntaje, :mascota_id, :ejercicio_id)
+RETURNING id, puntaje, mascota_id, ejercicio_id;
+
+-- Consulta los resultados de una mascota con su actividad.
+-- Tablas: resultado y ejercicio
+SELECT r.id, r.puntaje, r.mascota_id, r.ejercicio_id,
+       e.tipo, e.operacion
+FROM resultado AS r
+INNER JOIN ejercicio AS e ON e.id = r.ejercicio_id
+WHERE r.mascota_id = :mascota_id
+ORDER BY r.id DESC;
+
+-- Registra la compra de un producto con el monedero del usuario.
+-- Tablas: compra y producto
+INSERT INTO compra (monedero_id, producto_id)
+SELECT :monedero_id, p.id
+FROM producto AS p
+WHERE p.id = :producto_id
+RETURNING id, monedero_id, producto_id;
+
+-- Consulta el historial de compras de un usuario.
+-- Tablas: compra, monedero y producto
+SELECT c.id AS compra_id, c.monedero_id,
+       p.id AS producto_id, p.nombre, p.precio
+FROM compra AS c
+INNER JOIN monedero AS m ON m.id_monedero = c.monedero_id
+INNER JOIN producto AS p ON p.id = c.producto_id
+WHERE m.usuario_id = :usuario_id
+ORDER BY c.id DESC;
