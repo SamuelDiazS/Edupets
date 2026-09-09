@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from starlette.concurrency import run_in_threadpool
 
 from app.dependencies import (
     get_current_user,
@@ -11,7 +10,7 @@ from app.dependencies import (
 )
 from app.models.user import UserRecord
 from app.services.activities_service import MODULES, normalize_progress, normalize_tasks, record_level_completion
-from app.services.google_sheets import GoogleSheetsError, GoogleSheetsRepository
+from database.repository import DatabaseRepository, RepositoryError
 
 
 router = APIRouter()
@@ -42,7 +41,7 @@ async def activities_state(user: UserRecord = Depends(get_current_user)):
 async def complete_activity(
     request: Request,
     user: UserRecord = Depends(get_current_user),
-    repo: GoogleSheetsRepository = Depends(get_repository),
+    repo: DatabaseRepository = Depends(get_repository),
 ):
     await verify_csrf(request)
     payload = await request_payload(request)
@@ -51,10 +50,11 @@ async def complete_activity(
         level = int(payload.get("level", 0))
         correct_count = int(payload.get("correct_count", 0))
         result = record_level_completion(user, module, level, correct_count)
-        await run_in_threadpool(repo.update_user, user)
+        await repo.update_user(user)
+        await repo.record_activity(user.username, module, level, correct_count)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    except GoogleSheetsError as exc:
+    except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
     return {"user": user.public_dict(), **result}

@@ -1,27 +1,25 @@
-import logging
 import secrets
 from functools import lru_cache
 from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status
-from starlette.concurrency import run_in_threadpool
 from fastapi.templating import Jinja2Templates
+from loguru import logger
 
 from app.config import get_settings
+from database.repository import DatabaseRepository, RepositoryError
 from app.models.user import UserRecord
-from app.services.google_sheets import GoogleSheetsError, GoogleSheetsRepository
 from app.services.pet_service import prepare_user_state
 from app.utils.security import decode_access_token
 
 
 settings = get_settings()
 templates = Jinja2Templates(directory=str(settings.TEMPLATES_DIR))
-logger = logging.getLogger(__name__)
 
 
 @lru_cache
-def get_repository() -> GoogleSheetsRepository:
-    return GoogleSheetsRepository(get_settings())
+def get_repository() -> DatabaseRepository:
+    return DatabaseRepository(get_settings())
 
 
 def new_csrf_token() -> str:
@@ -60,7 +58,7 @@ async def verify_csrf(request: Request) -> None:
 
 async def get_current_user(
     request: Request,
-    repo: GoogleSheetsRepository = Depends(get_repository),
+    repo: DatabaseRepository = Depends(get_repository),
 ) -> UserRecord:
     settings = get_settings()
     username = getattr(request.state, "username", None)
@@ -73,9 +71,9 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No autenticado.")
 
     try:
-        logger.info("Buscando usuario autenticado %s en Google Sheets", username)
-        found = await run_in_threadpool(repo.get_user, username)
-    except GoogleSheetsError as exc:
+        logger.info("Buscando usuario autenticado %s en Neon", username)
+        found = await repo.get_user(username)
+    except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception("Error obteniendo el usuario autenticado %s", username)
@@ -93,7 +91,7 @@ async def get_current_user(
 
 async def get_current_user_for_page(
     request: Request,
-    repo: GoogleSheetsRepository = Depends(get_repository),
+    repo: DatabaseRepository = Depends(get_repository),
 ) -> UserRecord:
     try:
         return await get_current_user(request, repo)

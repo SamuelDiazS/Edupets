@@ -238,16 +238,16 @@ determinado.
 
 ------------------------------------------------------------------------
 
-## EXAMEN
+## MONEDERO
 
 Registra los exámenes realizados por las mascotas.
 
 **Campos:**
 
--   `id`: entero, clave primaria.
--   `nombre`: texto.
--   `puntaje`: entero.
--   `mascota(id)`: clave foránea hacia `MASCOTA.id`.
+-   `id_monedero`: entero, clave primaria.
+-   `id_usuario`: entero, clave foranea hacia `USUARIO.id`.
+-   `saldo_plata`: decimal.
+-   `ultima_actualizacion`: datetime .
 
 ------------------------------------------------------------------------
 
@@ -359,15 +359,15 @@ a la mascota mediante `mascota(id)`.
 
 ------------------------------------------------------------------------
 
-## MASCOTA → EXAMEN
+## MASCOTA → MONEDERO
 
 **Tipo: 1:N**
 
-Una mascota puede realizar varios exámenes y cada examen registra el
-puntaje obtenido por esa mascota.
+Una mascota puede tener distintas transacciones y cada transaccion registra el
+dinero gasto o obtenido de esa mascota.
 
 **Relación:**\
-`MASCOTA 1 ─── N EXAMEN`
+`MASCOTA 1 ─── N MONEDERO`
 
 ------------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 from app.models.user import UserRecord
-from app.services.google_sheets import GoogleSheetsRepository
+from database.repository import DatabaseRepository
 from app.utils.security import hash_password, verify_password
 
 
@@ -23,9 +23,9 @@ def validate_credentials(username: str, password: str) -> tuple[str, str]:
     return username, password
 
 
-def register_user(repo: GoogleSheetsRepository, username: str, password: str) -> UserRecord:
+async def register_user(repo: DatabaseRepository, username: str, password: str) -> UserRecord:
     username, password = validate_credentials(username, password)
-    if repo.get_user(username):
+    if await repo.get_user(username):
         raise AuthServiceError("Ese usuario ya existe.")
 
     user = UserRecord(
@@ -37,13 +37,13 @@ def register_user(repo: GoogleSheetsRepository, username: str, password: str) ->
         sleep=100,
         pet_name="Mi Mascota",
     )
-    repo.append_user(user)
+    await repo.append_user(user)
     return user
 
 
-def authenticate_user(repo: GoogleSheetsRepository, username: str, password: str) -> UserRecord:
+async def authenticate_user(repo: DatabaseRepository, username: str, password: str) -> UserRecord:
     username = normalize_username(username)
-    found = repo.get_user(username)
+    found = await repo.get_user(username)
     if not found:
         raise AuthServiceError("Usuario o contraseña incorrectos.")
     _, user = found

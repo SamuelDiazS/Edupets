@@ -17,10 +17,7 @@ class Settings(BaseSettings):
     COOKIE_SECURE: bool = False
     CSRF_COOKIE_NAME: str = "edupets_csrf"
 
-    GOOGLE_SHEET_ID: str = "1PLOtpKWiyxJLtEjQjkxQZYVtydn00eSwmpliR8aXPVw"
-    GOOGLE_SHEET_NAME: str = "Hoja 1"
-    GOOGLE_SERVICE_ACCOUNT_FILE: str | None = None
-    GOOGLE_SERVICE_ACCOUNT_INFO: str | None = None
+    DATABASE_URL: str = ""
 
     STATIC_DIR: Path = BASE_DIR / "static"
     TEMPLATES_DIR: Path = BASE_DIR / "templates"
@@ -31,10 +28,6 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
-
-    @property
-    def google_scopes(self) -> list[str]:
-        return ["https://www.googleapis.com/auth/spreadsheets"]
 
 
 @lru_cache

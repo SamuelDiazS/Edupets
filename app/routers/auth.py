@@ -2,13 +2,12 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
-from starlette.concurrency import run_in_threadpool
 
 from app.config import get_settings
 from app.dependencies import get_current_user, get_repository, request_payload, templates, verify_csrf
 from app.models.user import UserRecord
 from app.services.auth_service import AuthServiceError, authenticate_user, register_user
-from app.services.google_sheets import GoogleSheetsError, GoogleSheetsRepository
+from database.repository import DatabaseRepository, RepositoryError
 from app.services.pet_service import apply_pet_sync
 from app.utils.security import create_access_token
 
@@ -49,13 +48,11 @@ async def login_page(request: Request):
 
 
 @router.post("/login")
-async def login(request: Request, repo: GoogleSheetsRepository = Depends(get_repository)):
+async def login(request: Request, repo: DatabaseRepository = Depends(get_repository)):
     await verify_csrf(request)
     payload = await request_payload(request)
     try:
-        user = await run_in_threadpool(
-            authenticate_user, repo, str(payload.get("username", "")), str(payload.get("password", ""))
-        )
+        user = await authenticate_user(repo, str(payload.get("username", "")), str(payload.get("password", "")))
     except AuthServiceError as exc:
         return templates.TemplateResponse(
             "login.html",
@@ -67,7 +64,7 @@ async def login(request: Request, repo: GoogleSheetsRepository = Depends(get_rep
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    except GoogleSheetsError as exc:
+    except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except Exception as exc:
         return templates.TemplateResponse(
@@ -95,13 +92,11 @@ async def register_page(request: Request):
 
 
 @router.post("/register")
-async def register(request: Request, repo: GoogleSheetsRepository = Depends(get_repository)):
+async def register(request: Request, repo: DatabaseRepository = Depends(get_repository)):
     await verify_csrf(request)
     payload = await request_payload(request)
     try:
-        user = await run_in_threadpool(
-            register_user, repo, str(payload.get("username", "")), str(payload.get("password", ""))
-        )
+        user = await register_user(repo, str(payload.get("username", "")), str(payload.get("password", "")))
     except AuthServiceError as exc:
         return templates.TemplateResponse(
             "register.html",
@@ -113,7 +108,7 @@ async def register(request: Request, repo: GoogleSheetsRepository = Depends(get_
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    except GoogleSheetsError as exc:
+    except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except Exception as exc:
         return templates.TemplateResponse(
@@ -136,7 +131,7 @@ async def register(request: Request, repo: GoogleSheetsRepository = Depends(get_
 async def logout(
     request: Request,
     user: UserRecord = Depends(get_current_user),
-    repo: GoogleSheetsRepository = Depends(get_repository),
+    repo: DatabaseRepository = Depends(get_repository),
 ):
     logger.info("Cierre de sesión iniciado para usuario %s", user.username)
     await verify_csrf(request)
@@ -144,8 +139,8 @@ async def logout(
     if payload:
         apply_pet_sync(user, payload)
         try:
-            await run_in_threadpool(repo.update_user, user)
-        except GoogleSheetsError as exc:
+            await repo.update_user(user)
+        except RepositoryError as exc:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
     response = RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)

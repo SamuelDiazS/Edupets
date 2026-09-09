@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from starlette.concurrency import run_in_threadpool
 
 from app.dependencies import (
     get_current_user,
@@ -10,7 +9,7 @@ from app.dependencies import (
     verify_csrf,
 )
 from app.models.user import UserRecord
-from app.services.google_sheets import GoogleSheetsError, GoogleSheetsRepository
+from database.repository import DatabaseRepository, RepositoryError
 from app.services.shop_service import SHOP_ITEMS, buy_item
 
 
@@ -35,15 +34,15 @@ async def shop_page(request: Request, user: UserRecord = Depends(get_current_use
 async def buy_shop_item(
     request: Request,
     user: UserRecord = Depends(get_current_user),
-    repo: GoogleSheetsRepository = Depends(get_repository),
+    repo: DatabaseRepository = Depends(get_repository),
 ):
     await verify_csrf(request)
     payload = await request_payload(request)
     try:
         item = buy_item(user, str(payload.get("item_id", "")))
-        await run_in_threadpool(repo.update_user, user)
+        await repo.update_user(user)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    except GoogleSheetsError as exc:
+    except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     return {"user": user.public_dict(), "item": item}

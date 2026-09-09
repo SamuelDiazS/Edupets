@@ -6,9 +6,8 @@
 -- de Edupets.
 --
 -- NOTA:
--- El repositorio actualmente utiliza Google Sheets como almacenamiento
--- provisional. Este esquema NO cambia automáticamente el backend de FastAPI;
--- para usar PostgreSQL habrá que sustituir/crear el servicio de persistencia.
+-- El backend utiliza database/repository.py para acceder a este esquema
+-- PostgreSQL en Neon.
 
 BEGIN;
 

@@ -207,3 +207,20 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+def monedero() -> None:
+    w = h = 256
+    img = canvas(w, h)
+    draw_circle(img, w, h, 128, 128, 100, (255, 200, 61, 255))
+    draw_circle(img, w, h, 128, 128, 80, (255, 237, 204, 255))
+    draw_line(img, w, h, 128 - 40, 128 - 40, 128 + 40, 128 + 40, 10, (24, 50, 71, 255))
+    draw_line(img, w, h, 128 - 40, 128 + 40, 128 + 40, 128 - 40, 10, (24, 50, 71, 255))
+    save_png(OUT / "monedero.png", w, h, img)
+
+def canjear() -> None:
+    w = h = 256
+    img = canvas(w, h)
+    draw_circle(img, w, h, 128, 128, 100, (46, 184, 240, 255))
+    draw_circle(img, w, h, 128, 128, 80, (231, 248, 255, 255))
+    draw_line(img, w, h, 128, 128 - 40, 128, 128 + 40, 10, (24, 50, 71, 255))
+    save_png(OUT / "canjear.png", w, h, img)
