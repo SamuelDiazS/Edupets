@@ -266,3 +266,25 @@ LEFT JOIN mascota m
     ON m.usuario_id = u.id;
 
 COMMIT;
+
+-- ============================================================
+-- CAMBIOS PARA SISTEMA DE CAMBIO DE MASCOTA
+-- ============================================================
+
+ALTER TABLE mascota
+    ADD COLUMN IF NOT EXISTS especie VARCHAR(20) NOT NULL DEFAULT 'predeterminada';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'chk_mascota_especie'
+    ) THEN
+        ALTER TABLE mascota
+            ADD CONSTRAINT chk_mascota_especie
+            CHECK (especie IN ('predeterminada', 'oso', 'zorro'));
+    END IF;
+END $$;
+
+INSERT INTO producto (nombre, precio)
+VALUES ('Oso', 100), ('Zorro', 150)
+ON CONFLICT (nombre) DO NOTHING;

@@ -21,13 +21,23 @@
             const price = Number.parseInt(item.dataset.price || "0", 10);
             const button = item.querySelector(".buy-button");
             if (button) {
-                button.disabled = state.coins < price;
+                const petId = item.dataset.petId;
+                if (petId) {
+                    const isCurrent = state.pet_type === petId;
+                    const isOwned = (state.owned_pets || []).includes(petId);
+                    item.classList.toggle("is-current-pet", isCurrent);
+                    button.textContent = isCurrent ? "Mascota actual" : isOwned ? "Usar" : "Comprar";
+                    button.disabled = isCurrent || (!isOwned && state.coins < price);
+                } else {
+                    button.disabled = state.coins < price;
+                }
             }
         });
     }
 
     async function buy(itemId) {
-        const button = root.querySelector(`.buy-button[data-item-id="${itemId}"]`);
+        const button = root.querySelector(`.buy-button[data-item-id="${itemId}"], .buy-button[data-pet-id="${itemId}"]`);
+        const petId = button?.dataset.petId;
         if (button) {
             button.disabled = true;
         }
@@ -35,16 +45,18 @@
             messageNode.textContent = "";
         }
         try {
-            const payload = await Edupets.api("/api/shop/buy", {
+            const payload = await Edupets.api(petId ? "/api/shop/pet" : "/api/shop/buy", {
                 method: "POST",
                 body: JSON.stringify({
                     csrf_token: Edupets.csrfToken,
-                    item_id: itemId,
+                    ...(petId ? { pet_id: petId } : { item_id: itemId }),
                 }),
             });
             state = Edupets.applyServerSnapshot(username, payload.user);
             if (messageNode) {
-                messageNode.textContent = `${payload.item.name} comprado`;
+                messageNode.textContent = petId
+                    ? `${payload.item.name} ${payload.purchased ? "comprado y seleccionado" : "seleccionado"}`
+                    : `${payload.item.name} comprado`;
             }
         } catch (error) {
             if (messageNode) {

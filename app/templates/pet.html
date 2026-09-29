@@ -32,7 +32,7 @@
     </div>
 
     <div class="pet-stage">
-        <img class="pet-image" src="{{ url_for('static', path='images/pet.png') }}" alt="Mascota virtual">
+        <img class="pet-image" src="{{ url_for('static', path=pet_image_path(user.pet_type)) }}" alt="Mascota virtual">
     </div>
 
     <div class="pet-name-panel">

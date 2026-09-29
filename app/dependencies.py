@@ -10,11 +10,13 @@ from app.config import get_settings
 from database.repository import DatabaseRepository, RepositoryError
 from app.models.user import UserRecord
 from app.services.pet_service import prepare_user_state
+from app.services.pet_service import pet_image_path
 from app.utils.security import decode_access_token
 
 
 settings = get_settings()
 templates = Jinja2Templates(directory=str(settings.TEMPLATES_DIR))
+templates.env.globals["pet_image_path"] = pet_image_path
 
 
 @lru_cache

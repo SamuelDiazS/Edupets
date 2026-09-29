@@ -34,6 +34,23 @@ SHOP_ITEMS: dict[str, dict[str, Any]] = {
     },
 }
 
+PET_ITEMS: dict[str, dict[str, Any]] = {
+    "oso": {
+        "id": "oso",
+        "name": "Oso",
+        "image": "oso.png",
+        "price": 100,
+        "description": "Un compañero fuerte y tranquilo.",
+    },
+    "zorro": {
+        "id": "zorro",
+        "name": "Zorro",
+        "image": "zorro.png",
+        "price": 150,
+        "description": "Un compañero curioso y ágil.",
+    },
+}
+
 
 def buy_item(user: UserRecord, item_id: str) -> dict[str, Any]:
     item = SHOP_ITEMS.get(item_id)

@@ -687,6 +687,16 @@ main {
     gap: 16px;
 }
 
+.shop-section {
+    display: grid;
+    gap: 14px;
+}
+
+.shop-section-title {
+    margin: 0;
+    font-size: 1.45rem;
+}
+
 .shop-item {
     display: grid;
     grid-template-columns: 96px minmax(0, 1fr);
@@ -714,6 +724,11 @@ main {
     margin: 0;
     color: var(--muted);
     font-weight: 800;
+}
+
+.pet-shop-item.is-current-pet {
+    border-color: var(--green);
+    box-shadow: 0 0 0 2px rgba(88, 204, 2, 0.18), var(--shadow);
 }
 
 .shop-buy-row {

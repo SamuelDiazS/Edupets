@@ -61,6 +61,7 @@ class DatabaseRepository:
 			"""
 			SELECT u.id AS usuario_id, u.nombre, c.contrasena,
 				   m.id AS mascota_id, m.nombre AS mascota,
+				   m.especie AS tipo_mascota,
 				   m.comida, m.sueno, m.felicidad,
 				   COALESCE(w.saldo_plata, 0) AS monedas
 			FROM usuario AS u
@@ -73,6 +74,17 @@ class DatabaseRepository:
 		)
 		if row is None:
 			return None
+
+		owned_pet_rows = await pool.fetch(
+			"""
+			SELECT DISTINCT LOWER(p.nombre) AS tipo_mascota
+			FROM compra AS c
+			JOIN monedero AS w ON w.id_monedero = c.monedero_id
+			JOIN producto AS p ON p.id = c.producto_id
+			WHERE w.usuario_id = $1 AND p.nombre IN ('Oso', 'Zorro')
+			""",
+			row["usuario_id"],
+		)
 
 		progress_rows = await pool.fetch(
 			"""
@@ -114,6 +126,8 @@ class DatabaseRepository:
 			food=int(row["comida"] if row["comida"] is not None else 100),
 			sleep=int(row["sueno"] if row["sueno"] is not None else 100),
 			pet_name=row["mascota"] or "Mi Mascota",
+			pet_type=row["tipo_mascota"] or "predeterminada",
+			owned_pets=[pet_row["tipo_mascota"] for pet_row in owned_pet_rows],
 			progress=progress,
 			tasks=tasks,
 		)
@@ -136,7 +150,7 @@ class DatabaseRepository:
 						user_id,
 					)
 					await connection.execute(
-						"INSERT INTO mascota (nombre, comida, sueno, felicidad, usuario_id) VALUES ($1, $2, $3, $4, $5)",
+						"INSERT INTO mascota (nombre, comida, sueno, felicidad, usuario_id, especie) VALUES ($1, $2, $3, $4, $5, 'predeterminada')",
 						user.pet_name,
 						user.food,
 						user.sleep,
@@ -188,6 +202,69 @@ class DatabaseRepository:
 			raise
 		except asyncpg.PostgresError as exc:
 			raise RepositoryError("No se pudo guardar el usuario.") from exc
+
+	async def purchase_pet(self, username: str, pet_id: str, pet_name: str, price: int) -> bool:
+		pool = await self._get_pool()
+		try:
+			async with pool.acquire() as connection:
+				async with connection.transaction():
+					row = await connection.fetchrow(
+						"""
+						SELECT w.id_monedero, m.id AS mascota_id
+						FROM usuario AS u
+						JOIN monedero AS w ON w.usuario_id = u.id
+						JOIN mascota AS m ON m.usuario_id = u.id
+						WHERE LOWER(u.nombre) = LOWER($1)
+						FOR UPDATE OF w, m
+						""",
+						username,
+					)
+					if row is None:
+						raise RepositoryError("No se encontró el monedero o la mascota del usuario.")
+
+					product = await connection.fetchrow(
+						"SELECT id FROM producto WHERE nombre = $1",
+						pet_name,
+					)
+					if product is None:
+						raise RepositoryError("Falta ejecutar la migración SQL de mascotas en Neon.")
+
+					owned = await connection.fetchval(
+						"SELECT EXISTS (SELECT 1 FROM compra WHERE monedero_id = $1 AND producto_id = $2)",
+						row["id_monedero"],
+						product["id"],
+					)
+					purchased = not owned
+					if purchased:
+						balance = await connection.fetchval(
+							"""
+							UPDATE monedero
+							SET saldo_plata = saldo_plata - $1,
+								ultima_actualizacion = CURRENT_TIMESTAMP
+							WHERE id_monedero = $2 AND saldo_plata >= $1
+							RETURNING saldo_plata
+							""",
+							price,
+							row["id_monedero"],
+						)
+						if balance is None:
+							raise ValueError("No tienes monedas suficientes.")
+						await connection.execute(
+							"INSERT INTO compra (monedero_id, producto_id) VALUES ($1, $2)",
+							row["id_monedero"],
+							product["id"],
+						)
+
+					await connection.execute(
+						"UPDATE mascota SET especie = $1 WHERE id = $2",
+						pet_id,
+						row["mascota_id"],
+					)
+			return purchased
+		except (RepositoryError, ValueError):
+			raise
+		except (asyncpg.PostgresError, OSError) as exc:
+			raise RepositoryError("No se pudo completar la compra de la mascota.") from exc
 
 	async def record_activity(self, username: str, module: str, level: int, correct_count: int) -> None:
 		pool = await self._get_pool()

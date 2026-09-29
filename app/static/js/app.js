@@ -58,6 +58,8 @@
             food: clamp(state.food ?? 100),
             sleep: clamp(state.sleep ?? 100),
             pet_name: String(state.pet_name || "Mi Mascota").slice(0, 30),
+            pet_type: String(state.pet_type || "predeterminada"),
+            owned_pets: Array.isArray(state.owned_pets) ? state.owned_pets : [],
             progress: state.progress && typeof state.progress === "object" ? state.progress : {},
             tasks: state.tasks && typeof state.tasks === "object" ? state.tasks : {},
             lastTick: Number.parseInt(state.lastTick || Date.now(), 10),

@@ -16,7 +16,9 @@
         </div>
     </div>
 
-    <div class="shop-grid">
+    <section class="shop-section" aria-labelledby="shop-items-heading">
+        <h2 id="shop-items-heading" class="shop-section-title">Objetos</h2>
+        <div class="shop-grid">
         {% for item in items %}
         <article class="shop-item" data-item="{{ item.id }}" data-price="{{ item.price }}">
             <img src="{{ url_for('static', path='images/' ~ item.image) }}" alt="{{ item.name }}">
@@ -30,7 +32,33 @@
             </div>
         </article>
         {% endfor %}
-    </div>
+        </div>
+    </section>
+
+    <section class="shop-section" aria-labelledby="shop-pets-heading">
+        <h2 id="shop-pets-heading" class="shop-section-title">Mascotas</h2>
+        <div class="shop-grid">
+            {% for pet in pets %}
+            <article class="shop-item pet-shop-item{% if user.pet_type == pet.id %} is-current-pet{% endif %}" data-pet-id="{{ pet.id }}" data-price="{{ pet.price }}">
+                <img src="{{ url_for('static', path='images/' ~ pet.image) }}" alt="{{ pet.name }}">
+                <div>
+                    <h2>{{ pet.name }}</h2>
+                    <p>{{ pet.description }}</p>
+                </div>
+                <div class="shop-buy-row">
+                    <span><strong>{{ pet.price }}</strong> monedas</span>
+                    {% if user.pet_type == pet.id %}
+                    <button class="primary-button buy-button" type="button" data-pet-id="{{ pet.id }}" disabled>Mascota actual</button>
+                    {% elif pet.id in user.owned_pets %}
+                    <button class="primary-button buy-button" type="button" data-pet-id="{{ pet.id }}">Usar</button>
+                    {% else %}
+                    <button class="primary-button buy-button" type="button" data-pet-id="{{ pet.id }}">Comprar</button>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
     <p id="shop-message" class="shop-message" aria-live="polite"></p>
 </section>
 {% endblock %}

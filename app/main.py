@@ -1,13 +1,13 @@
 from contextlib import asynccontextmanager
 import logging
 
-from fastapi import FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.dependencies import get_repository, new_csrf_token, templates
-from database.repository import RepositoryError
+from database.repository import DatabaseRepository, RepositoryError
 from app.routers import activities, auth, pet, shop
 from app.utils.security import decode_access_token
 
@@ -61,10 +61,18 @@ async def session_context_middleware(request: Request, call_next):
 
 
 @app.get("/")
-async def index(request: Request):
+async def index(request: Request, repo: DatabaseRepository = Depends(get_repository)):
+    user = None
+    if request.state.username:
+        found = await repo.get_user(request.state.username)
+        user = found[1] if found else None
     return templates.TemplateResponse(
         "index.html",
-        {"request": request, "title": "Edupets"},
+        {
+            "request": request,
+            "title": "Edupets",
+            "user": user,
+        },
     )
 
 
