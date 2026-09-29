@@ -453,6 +453,13 @@ main {
     background: var(--stage-bg);
     border: 1px solid var(--line);
     overflow: hidden;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.pet-stage.is-drop-target {
+    border-color: var(--green);
+    box-shadow: inset 0 0 0 4px rgba(88, 204, 2, 0.2);
+    background: linear-gradient(#effbe6, #ffffff);
 }
 
 .pet-image {
@@ -470,6 +477,110 @@ main {
 .save-status {
     min-height: 20px;
     color: var(--green);
+    font-weight: 800;
+}
+
+.inventory-panel {
+    display: grid;
+    gap: 12px;
+    padding: 18px;
+    border-block: 1px solid var(--line);
+}
+
+.inventory-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.inventory-heading h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.inventory-heading span,
+.inventory-empty {
+    color: var(--muted);
+    font-weight: 800;
+}
+
+.inventory-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.inventory-item {
+    position: relative;
+    width: 148px;
+    min-height: 156px;
+    display: grid;
+    grid-template-rows: 58px auto auto 36px;
+    justify-items: center;
+    align-content: center;
+    gap: 5px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
+}
+
+.inventory-item:active {
+    cursor: grabbing;
+}
+
+.inventory-item img {
+    width: 58px;
+    height: 58px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.inventory-item-name {
+    font-weight: 900;
+}
+
+.inventory-item-quantity {
+    color: var(--primary-dark);
+}
+
+.inventory-use-button {
+    min-height: 32px;
+    padding-inline: 12px;
+    font-size: 0.82rem;
+}
+
+.inventory-item.is-dragging {
+    opacity: 0.35;
+}
+
+.inventory-drag-ghost {
+    position: fixed;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.88;
+    transform: translate(-50%, -50%) scale(0.92);
+    box-shadow: var(--shadow);
+}
+
+.pet-feedback {
+    min-height: 22px;
+    margin: 0;
+    color: var(--muted);
+    font-weight: 800;
+}
+
+.pet-feedback.is-error {
+    color: var(--coral);
+}
+
+.shop-buy-row .inventory-count {
+    color: var(--muted);
+    font-size: 0.9rem;
     font-weight: 800;
 }
 
@@ -848,6 +959,20 @@ main {
 
     .shop-item {
         grid-template-columns: 74px minmax(0, 1fr);
+    }
+
+    .inventory-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    }
+
+    .inventory-item {
+        width: 100%;
+    }
+
+    .inventory-heading {
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .shop-item img {

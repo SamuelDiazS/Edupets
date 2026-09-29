@@ -20,6 +20,12 @@
         root.querySelectorAll(".shop-item").forEach((item) => {
             const price = Number.parseInt(item.dataset.price || "0", 10);
             const button = item.querySelector(".buy-button");
+            const itemId = item.dataset.item;
+            const inventoryCount = root.querySelector(`[data-inventory-count="${itemId}"]`);
+            const ownedQuantity = (state.inventory || []).find((entry) => entry.item_id === itemId)?.quantity || 0;
+            if (inventoryCount) {
+                inventoryCount.textContent = `Inventario ×${ownedQuantity}`;
+            }
             if (button) {
                 const petId = item.dataset.petId;
                 if (petId) {
@@ -67,7 +73,7 @@
     }
 
     root.querySelectorAll(".buy-button").forEach((button) => {
-        button.addEventListener("click", () => buy(button.dataset.itemId));
+        button.addEventListener("click", () => buy(button.dataset.itemId || button.dataset.petId));
     });
 
     render();

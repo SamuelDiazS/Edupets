@@ -288,3 +288,44 @@ END $$;
 INSERT INTO producto (nombre, precio)
 VALUES ('Oso', 100), ('Zorro', 150)
 ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- CAMBIOS PARA INVENTARIO Y USO DE PRODUCTOS
+-- Ejecutar las instrucciones siguientes en Neon
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS inventario (
+    usuario_id  INTEGER NOT NULL,
+    producto_id INTEGER NOT NULL,
+    cantidad    INTEGER NOT NULL DEFAULT 1,
+
+    CONSTRAINT pk_inventario PRIMARY KEY (usuario_id, producto_id),
+    CONSTRAINT fk_inventario_usuario
+        FOREIGN KEY (usuario_id)
+        REFERENCES usuario(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_inventario_producto
+        FOREIGN KEY (producto_id)
+        REFERENCES producto(id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+    CONSTRAINT chk_inventario_cantidad CHECK (cantidad > 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_inventario_producto_id
+    ON inventario(producto_id);
+
+ALTER TABLE mascota
+    ADD COLUMN IF NOT EXISTS especie VARCHAR(20) NOT NULL DEFAULT 'predeterminada';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'chk_mascota_especie'
+    ) THEN
+        ALTER TABLE mascota
+            ADD CONSTRAINT chk_mascota_especie
+            CHECK (especie IN ('predeterminada', 'oso', 'zorro'));
+    END IF;
+END $$;

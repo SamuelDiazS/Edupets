@@ -85,6 +85,20 @@ class DatabaseRepository:
 			""",
 			row["usuario_id"],
 		)
+		inventory_rows = await pool.fetch(
+			"""
+			SELECT CASE LOWER(p.nombre)
+					WHEN 'comida' THEN 'pollo'
+					ELSE LOWER(p.nombre)
+				END AS item_id,
+				p.nombre, i.cantidad
+			FROM inventario AS i
+			JOIN producto AS p ON p.id = i.producto_id
+			WHERE i.usuario_id = $1
+			ORDER BY p.id
+			""",
+			row["usuario_id"],
+		)
 
 		progress_rows = await pool.fetch(
 			"""
@@ -128,6 +142,10 @@ class DatabaseRepository:
 			pet_name=row["mascota"] or "Mi Mascota",
 			pet_type=row["tipo_mascota"] or "predeterminada",
 			owned_pets=[pet_row["tipo_mascota"] for pet_row in owned_pet_rows],
+			inventory=[
+				{"item_id": inventory_row["item_id"], "name": inventory_row["nombre"], "quantity": inventory_row["cantidad"]}
+				for inventory_row in inventory_rows
+			],
 			progress=progress,
 			tasks=tasks,
 		)
@@ -189,28 +207,212 @@ class DatabaseRepository:
 						user.happiness,
 						row["id"],
 					)
-					await connection.execute(
-						"""
-						INSERT INTO monedero (usuario_id, saldo_plata) VALUES ($1, $2)
-						ON CONFLICT (usuario_id) DO UPDATE SET saldo_plata = EXCLUDED.saldo_plata,
-							ultima_actualizacion = CURRENT_TIMESTAMP
-						""",
-						row["id"],
-						user.coins,
-					)
 		except RepositoryError:
 			raise
 		except asyncpg.PostgresError as exc:
 			raise RepositoryError("No se pudo guardar el usuario.") from exc
 
-	async def purchase_pet(self, username: str, pet_id: str, pet_name: str, price: int) -> bool:
+	async def add_coins(self, username: str, amount: int) -> int:
+		if amount < 0:
+			raise ValueError("La recompensa no puede ser negativa.")
+		pool = await self._get_pool()
+		try:
+			balance = await pool.fetchval(
+				"""
+				UPDATE monedero AS w
+				SET saldo_plata = w.saldo_plata + $2,
+					ultima_actualizacion = CURRENT_TIMESTAMP
+				FROM usuario AS u
+				WHERE w.usuario_id = u.id AND LOWER(u.nombre) = LOWER($1)
+				RETURNING w.saldo_plata
+				""",
+				username,
+				amount,
+			)
+			if balance is None:
+				raise RepositoryError("No se encontró el monedero del usuario.")
+			return int(balance)
+		except RepositoryError:
+			raise
+		except asyncpg.PostgresError as exc:
+			raise RepositoryError("No se pudo guardar la recompensa.") from exc
+
+	async def get_products(self) -> list[dict[str, Any]]:
+		pool = await self._get_pool()
+		try:
+			rows = await pool.fetch("SELECT nombre AS name, precio AS price FROM producto ORDER BY id")
+			return [dict(row) for row in rows]
+		except asyncpg.PostgresError as exc:
+			raise RepositoryError("No se pudo cargar el catálogo de la tienda.") from exc
+
+	async def _get_inventory(self, connection: asyncpg.Connection, user_id: int) -> list[dict[str, Any]]:
+		rows = await connection.fetch(
+			"""
+			SELECT CASE LOWER(p.nombre)
+					WHEN 'comida' THEN 'pollo'
+					ELSE LOWER(p.nombre)
+				END AS item_id,
+				p.nombre, i.cantidad
+			FROM inventario AS i
+			JOIN producto AS p ON p.id = i.producto_id
+			WHERE i.usuario_id = $1
+			ORDER BY p.id
+			""",
+			user_id,
+		)
+		return [
+			{"item_id": row["item_id"], "name": row["nombre"], "quantity": row["cantidad"]}
+			for row in rows
+		]
+
+	async def purchase_item(self, username: str, product_name: str) -> dict[str, Any]:
 		pool = await self._get_pool()
 		try:
 			async with pool.acquire() as connection:
 				async with connection.transaction():
 					row = await connection.fetchrow(
 						"""
-						SELECT w.id_monedero, m.id AS mascota_id
+						SELECT u.id AS usuario_id, w.id_monedero
+						FROM usuario AS u
+						JOIN monedero AS w ON w.usuario_id = u.id
+						WHERE LOWER(u.nombre) = LOWER($1)
+						FOR UPDATE OF w
+						""",
+						username,
+					)
+					if row is None:
+						raise RepositoryError("No se encontró el monedero del usuario.")
+
+					product = await connection.fetchrow(
+						"SELECT id, precio FROM producto WHERE LOWER(nombre) = LOWER($1)", product_name
+					)
+					if product is None:
+						raise RepositoryError("El producto no está disponible en la tienda.")
+
+					balance = await connection.fetchval(
+						"""
+						UPDATE monedero
+						SET saldo_plata = saldo_plata - $1,
+							ultima_actualizacion = CURRENT_TIMESTAMP
+						WHERE id_monedero = $2 AND saldo_plata >= $1
+						RETURNING saldo_plata
+						""",
+						product["precio"],
+						row["id_monedero"],
+					)
+					if balance is None:
+						raise ValueError("No tienes monedas suficientes.")
+
+					await connection.execute(
+						"INSERT INTO compra (monedero_id, producto_id) VALUES ($1, $2)",
+						row["id_monedero"],
+						product["id"],
+					)
+					await connection.execute(
+						"""
+						INSERT INTO inventario (usuario_id, producto_id, cantidad)
+						VALUES ($1, $2, 1)
+						ON CONFLICT (usuario_id, producto_id)
+						DO UPDATE SET cantidad = inventario.cantidad + 1
+						""",
+						row["usuario_id"],
+						product["id"],
+					)
+					inventory = await self._get_inventory(connection, row["usuario_id"])
+				return {
+					"coins": int(balance),
+					"price": int(product["precio"]),
+					"inventory": inventory,
+				}
+		except (RepositoryError, ValueError):
+			raise
+		except (asyncpg.PostgresError, OSError) as exc:
+			raise RepositoryError("No se pudo completar la compra del producto.") from exc
+
+	async def use_item(self, username: str, product_name: str, stat: str, effect: int) -> dict[str, Any]:
+		pool = await self._get_pool()
+		stat_columns = {"food": "comida", "sleep": "sueno", "happiness": "felicidad"}
+		column = stat_columns.get(stat)
+		if column is None or effect <= 0:
+			raise ValueError("Efecto del producto no válido.")
+
+		try:
+			async with pool.acquire() as connection:
+				async with connection.transaction():
+					row = await connection.fetchrow(
+						"""
+						SELECT u.id AS usuario_id, m.id AS mascota_id
+						FROM usuario AS u
+						JOIN mascota AS m ON m.usuario_id = u.id
+						WHERE LOWER(u.nombre) = LOWER($1)
+						FOR UPDATE OF m
+						""",
+						username,
+					)
+					if row is None:
+						raise RepositoryError("No se encontró la mascota del usuario.")
+
+					product_id = await connection.fetchval(
+						"SELECT id FROM producto WHERE LOWER(nombre) = LOWER($1)", product_name
+					)
+					if product_id is None:
+						raise ValueError("Producto no válido.")
+
+					inventory_row = await connection.fetchrow(
+						"""
+						SELECT cantidad FROM inventario
+						WHERE usuario_id = $1 AND producto_id = $2
+						FOR UPDATE
+						""",
+						row["usuario_id"],
+						product_id,
+					)
+					if inventory_row is None or inventory_row["cantidad"] < 1:
+						raise ValueError("No tienes ese objeto en el inventario.")
+
+					if inventory_row["cantidad"] == 1:
+						await connection.execute(
+							"DELETE FROM inventario WHERE usuario_id = $1 AND producto_id = $2",
+							row["usuario_id"],
+							product_id,
+						)
+					else:
+						await connection.execute(
+							"UPDATE inventario SET cantidad = cantidad - 1 WHERE usuario_id = $1 AND producto_id = $2",
+							row["usuario_id"],
+							product_id,
+						)
+
+					pet = await connection.fetchrow(
+						f"""
+						UPDATE mascota
+						SET {column} = LEAST(100, {column} + $1)
+						WHERE id = $2
+						RETURNING comida, sueno, felicidad
+						""",
+						effect,
+						row["mascota_id"],
+					)
+					inventory = await self._get_inventory(connection, row["usuario_id"])
+				return {
+					"food": pet["comida"],
+					"sleep": pet["sueno"],
+					"happiness": pet["felicidad"],
+					"inventory": inventory,
+				}
+		except (RepositoryError, ValueError):
+			raise
+		except (asyncpg.PostgresError, OSError) as exc:
+			raise RepositoryError("No se pudo utilizar el producto.") from exc
+
+	async def purchase_pet(self, username: str, pet_id: str, pet_name: str) -> bool:
+		pool = await self._get_pool()
+		try:
+			async with pool.acquire() as connection:
+				async with connection.transaction():
+					row = await connection.fetchrow(
+						"""
+						SELECT u.id AS usuario_id, w.id_monedero, m.id AS mascota_id
 						FROM usuario AS u
 						JOIN monedero AS w ON w.usuario_id = u.id
 						JOIN mascota AS m ON m.usuario_id = u.id
@@ -223,7 +425,7 @@ class DatabaseRepository:
 						raise RepositoryError("No se encontró el monedero o la mascota del usuario.")
 
 					product = await connection.fetchrow(
-						"SELECT id FROM producto WHERE nombre = $1",
+						"SELECT id, precio FROM producto WHERE LOWER(nombre) = LOWER($1)",
 						pet_name,
 					)
 					if product is None:
@@ -244,7 +446,7 @@ class DatabaseRepository:
 							WHERE id_monedero = $2 AND saldo_plata >= $1
 							RETURNING saldo_plata
 							""",
-							price,
+							product["precio"],
 							row["id_monedero"],
 						)
 						if balance is None:

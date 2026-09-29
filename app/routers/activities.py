@@ -52,6 +52,7 @@ async def complete_activity(
         result = record_level_completion(user, module, level, correct_count)
         await repo.update_user(user)
         await repo.record_activity(user.username, module, level, correct_count)
+        user.coins = await repo.add_coins(user.username, result["reward"])
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except RepositoryError as exc:

@@ -29,6 +29,7 @@
             <div class="shop-buy-row">
                 <span><strong>{{ item.price }}</strong> monedas</span>
                 <button class="primary-button buy-button" type="button" data-item-id="{{ item.id }}">Comprar</button>
+                <span class="inventory-count" data-inventory-count="{{ item.id }}">Inventario ×{{ item.quantity }}</span>
             </div>
         </article>
         {% endfor %}

@@ -31,9 +31,30 @@
         </div>
     </div>
 
-    <div class="pet-stage">
+    <div class="pet-stage" id="pet-drop-target" aria-label="Zona para usar objetos">
         <img class="pet-image" src="{{ url_for('static', path=pet_image_path(user.pet_type)) }}" alt="Mascota virtual">
     </div>
+
+    <section class="inventory-panel" aria-labelledby="inventory-heading">
+        <div class="inventory-heading">
+            <h2 id="inventory-heading">Inventario</h2>
+            <span>Objetos disponibles</span>
+        </div>
+        <div id="inventory-items" class="inventory-items">
+            {% set inventory_images = {"pollo": "pescado.png", "juguete": "juguete.png", "caramelos": "caramelos.png"} %}
+            {% for item in user.inventory %}
+            <article class="inventory-item" data-item-id="{{ item.item_id }}" data-inventory-item>
+                <img src="{{ url_for('static', path='images/' ~ inventory_images[item.item_id]) }}" alt="">
+                <span class="inventory-item-name">{{ item.name }}</span>
+                <strong class="inventory-item-quantity">×{{ item.quantity }}</strong>
+                <button class="secondary-button inventory-use-button" type="button" data-use-item="{{ item.item_id }}">Usar</button>
+            </article>
+            {% else %}
+            <p class="inventory-empty">Todavía no tienes objetos.</p>
+            {% endfor %}
+        </div>
+        <p id="pet-feedback" class="pet-feedback" aria-live="polite"></p>
+    </section>
 
     <div class="pet-name-panel">
         <label for="pet-name">Nombre</label>
