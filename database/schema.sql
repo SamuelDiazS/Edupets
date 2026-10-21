@@ -272,7 +272,7 @@ COMMIT;
 -- ============================================================
 
 ALTER TABLE mascota
-    ADD COLUMN IF NOT EXISTS especie VARCHAR(20) NOT NULL DEFAULT 'predeterminada';
+    ADD COLUMN IF NOT EXISTS especie VARCHAR(20) NOT NULL DEFAULT 'pinguino';
 
 DO $$
 BEGIN
@@ -281,7 +281,7 @@ BEGIN
     ) THEN
         ALTER TABLE mascota
             ADD CONSTRAINT chk_mascota_especie
-            CHECK (especie IN ('predeterminada', 'oso', 'zorro'));
+            CHECK (especie IN ('pinguino', 'oso', 'zorro'));
     END IF;
 END $$;
 
@@ -317,7 +317,7 @@ CREATE INDEX IF NOT EXISTS idx_inventario_producto_id
     ON inventario(producto_id);
 
 ALTER TABLE mascota
-    ADD COLUMN IF NOT EXISTS especie VARCHAR(20) NOT NULL DEFAULT 'predeterminada';
+    ADD COLUMN IF NOT EXISTS especie VARCHAR(20) NOT NULL DEFAULT 'pinguino';
 
 DO $$
 BEGIN
@@ -326,6 +326,6 @@ BEGIN
     ) THEN
         ALTER TABLE mascota
             ADD CONSTRAINT chk_mascota_especie
-            CHECK (especie IN ('predeterminada', 'oso', 'zorro'));
+            CHECK (especie IN ('pinguino', 'oso', 'zorro'));
     END IF;
 END $$;

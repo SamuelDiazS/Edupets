@@ -140,7 +140,7 @@ class DatabaseRepository:
 			food=int(row["comida"] if row["comida"] is not None else 100),
 			sleep=int(row["sueno"] if row["sueno"] is not None else 100),
 			pet_name=row["mascota"] or "Mi Mascota",
-			pet_type=row["tipo_mascota"] or "predeterminada",
+			pet_type=row["tipo_mascota"] or "pinguino",
 			owned_pets=[pet_row["tipo_mascota"] for pet_row in owned_pet_rows],
 			inventory=[
 				{"item_id": inventory_row["item_id"], "name": inventory_row["nombre"], "quantity": inventory_row["cantidad"]}
@@ -168,7 +168,7 @@ class DatabaseRepository:
 						user_id,
 					)
 					await connection.execute(
-						"INSERT INTO mascota (nombre, comida, sueno, felicidad, usuario_id, especie) VALUES ($1, $2, $3, $4, $5, 'predeterminada')",
+						"INSERT INTO mascota (nombre, comida, sueno, felicidad, usuario_id, especie) VALUES ($1, $2, $3, $4, $5, 'pinguino')",
 						user.pet_name,
 						user.food,
 						user.sleep,

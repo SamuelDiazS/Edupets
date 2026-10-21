@@ -15,14 +15,15 @@ STAT_FIELDS = {
 }
 
 PET_IMAGES = {
-    "predeterminada": "images/pet.png",
+    "pinguino": "images/pet.png",
     "oso": "images/oso.png",
     "zorro": "images/zorro.png",
+    "salmandra": "images/ nutria.png"
 }
 
 
 def pet_image_path(pet_type: Any) -> str:
-    return PET_IMAGES.get(str(pet_type or ""), PET_IMAGES["predeterminada"])
+    return PET_IMAGES.get(str(pet_type or ""), PET_IMAGES["pinguino"])
 
 
 def clamp_stat(value: Any) -> int:

@@ -58,7 +58,7 @@
             food: clamp(state.food ?? 100),
             sleep: clamp(state.sleep ?? 100),
             pet_name: String(state.pet_name || "Mi Mascota").slice(0, 30),
-            pet_type: String(state.pet_type || "predeterminada"),
+            pet_type: String(state.pet_type || "pinguino"),
             owned_pets: Array.isArray(state.owned_pets) ? state.owned_pets : [],
             inventory: Array.isArray(state.inventory) ? state.inventory : [],
             progress: state.progress && typeof state.progress === "object" ? state.progress : {},

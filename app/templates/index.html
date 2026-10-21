@@ -5,7 +5,7 @@
 <section class="welcome-shell">
     <div class="welcome-art">
         <img class="welcome-logo" src="{{ url_for('static', path='images/logo.png') }}" alt="Logo de Edupets">
-        <img class="welcome-pet" src="{{ url_for('static', path=pet_image_path(user.pet_type if user else 'predeterminada')) }}" alt="Mascota de Edupets">
+        <img class="welcome-pet" src="{{ url_for('static', path=pet_image_path(user.pet_type if user else 'pinguino')) }}" alt="Mascota de Edupets">
     </div>
     <div class="welcome-copy">
         <h1>Bienvenido a Edupets</h1>

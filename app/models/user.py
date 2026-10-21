@@ -11,7 +11,7 @@ class UserRecord(BaseModel):
     food: int = 100
     sleep: int = 100
     pet_name: str = "Mi Mascota"
-    pet_type: str = "predeterminada"
+    pet_type: str = "pinguino"
     owned_pets: list[str] = Field(default_factory=list)
     inventory: list[dict[str, Any]] = Field(default_factory=list)
     progress: dict[str, Any] = Field(default_factory=dict)

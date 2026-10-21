@@ -43,8 +43,24 @@ PET_ITEMS: dict[str, dict[str, Any]] = {
         "name": "Zorro",
         "database_name": "Zorro",
         "image": "zorro.png",
-        "description": "Un compañero curioso y ágil.",
+        "description": "El zorro fenek representa la astucia, la inteligencia, la adaptabilidad y la flexibilidad ante los cambios",
     },
+    "pinguino": {
+        "id": "pinguino",
+        "name":"pinguino"
+        "database_name":"pinguino"
+        "image":"pet.png"
+        "description":"pinguino parchao y estudioso"   
+    }
+     "nutria":{
+     "id":"nutria"
+     "name":"nutria"
+     "database_name":"nutria"
+     "image":"nutria.png"
+     "description":"La nutria representa la alegría, la curiosidad, la adaptabilidad y la libertad junto a la salud de los ecosistemas acuaticos y el equilibrio natural el Colombia"
+    
+}
+
 }
 
 
