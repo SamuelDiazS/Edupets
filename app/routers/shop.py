@@ -27,7 +27,8 @@ async def shop_page(
     except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     inventory_counts = {entry["item_id"]: entry["quantity"] for entry in user.inventory}
-    items = [{**item, "quantity": inventory_counts.get(item["id"], 0)} for item in items]
+    items = [{**item, "quantity": inventory_counts.get(item["id"], 0)} 
+    for item in items]
     return templates.TemplateResponse(
         "shop.html",
         {
