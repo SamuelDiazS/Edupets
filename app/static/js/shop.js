@@ -31,9 +31,19 @@
                 if (petId) {
                     const isCurrent = state.pet_type === petId;
                     const isOwned = (state.owned_pets || []).includes(petId);
+                    const status = item.querySelector(`[data-pet-status="${petId}"]`);
                     item.classList.toggle("is-current-pet", isCurrent);
                     button.textContent = isCurrent ? "Mascota actual" : isOwned ? "Usar" : "Comprar";
                     button.disabled = isCurrent || (!isOwned && state.coins < price);
+                    if (status) {
+                        status.textContent = isCurrent
+                            ? "Mascota actual"
+                            : isOwned
+                                ? "Desbloqueada"
+                                : state.coins < price
+                                    ? "No tienes monedas suficientes"
+                                    : "Disponible para comprar";
+                    }
                 } else {
                     button.disabled = state.coins < price;
                 }

@@ -387,3 +387,35 @@ WHERE NOT EXISTS (
     WHERE LOWER(existente.nombre) = LOWER(nuevo.nombre)
 )
 ON CONFLICT (nombre) DO NOTHING;
+
+-- Registra las mascotas desbloqueadas por usuario sin depender del historial de compras.
+CREATE TABLE IF NOT EXISTS mascota_desbloqueada (
+    usuario_id INTEGER NOT NULL,
+    especie    VARCHAR(20) NOT NULL,
+    fecha_desbloqueo TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_mascota_desbloqueada PRIMARY KEY (usuario_id, especie),
+    CONSTRAINT fk_mascota_desbloqueada_usuario
+        FOREIGN KEY (usuario_id)
+        REFERENCES usuario(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT chk_mascota_desbloqueada_especie
+        CHECK (especie IN ('pinguino', 'oso', 'zorro', 'nutria'))
+);
+
+-- Conserva el pingüino inicial y las mascotas ya seleccionadas en cuentas existentes.
+INSERT INTO mascota_desbloqueada (usuario_id, especie)
+SELECT m.usuario_id, m.especie
+FROM mascota AS m
+WHERE m.especie IN ('pinguino', 'oso', 'zorro', 'nutria')
+ON CONFLICT (usuario_id, especie) DO NOTHING;
+
+-- Migra a inventario las mascotas compradas antes de crear esta relación.
+INSERT INTO mascota_desbloqueada (usuario_id, especie)
+SELECT DISTINCT w.usuario_id, LOWER(p.nombre)
+FROM compra AS c
+JOIN monedero AS w ON w.id_monedero = c.monedero_id
+JOIN producto AS p ON p.id = c.producto_id
+WHERE LOWER(p.nombre) IN ('oso', 'zorro', 'nutria')
+ON CONFLICT (usuario_id, especie) DO NOTHING;

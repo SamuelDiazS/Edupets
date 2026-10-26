@@ -936,6 +936,12 @@ main {
     font-weight: 800;
 }
 
+.shop-item .pet-ownership-status {
+    margin-top: 8px;
+    color: var(--primary-dark);
+    font-size: 0.9rem;
+}
+
 .pet-shop-item.is-current-pet {
     border-color: var(--green);
     box-shadow: 0 0 0 2px rgba(88, 204, 2, 0.18), var(--shadow);

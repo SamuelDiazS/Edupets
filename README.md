@@ -594,7 +594,7 @@ psql $env:DATABASE_URL -f database/schema.sql
 
 Reemplaza los marcadores localmente; no uses una cadena de ejemplo como credencial. El cliente `psql` no carga automáticamente el archivo `.env`. También se puede ejecutar el contenido de `database/schema.sql` desde un editor SQL de Neon que admita el script completo.
 
-`schema.sql` crea las tablas, claves, restricciones, índices, vista y datos iniciales definidos por el proyecto. En instalaciones existentes, ejecutar SQL nuevo no cambia automáticamente la base remota: aplica el archivo o la migración correspondiente de forma explícita. Después de `-- CAMBIOS 2`, el script actualiza de forma idempotente la restricción de especies, convierte el valor legado `predeterminada` a `pinguino`, exige precios y saldos enteros (como usa el modelo de monedas) y añade el pingüino gratuito y la nutria al catálogo. Aplica esa sección en Neon para alinear las especies y productos con el backend.
+`schema.sql` crea las tablas, claves, restricciones, índices, vista y datos iniciales definidos por el proyecto. En instalaciones existentes, ejecutar SQL nuevo no cambia automáticamente la base remota: aplica el archivo o la migración correspondiente de forma explícita. Después de `-- CAMBIOS 2`, el script actualiza de forma idempotente la restricción de especies, convierte el valor legado `predeterminada` a `pinguino`, exige precios y saldos enteros (como usa el modelo de monedas), añade el pingüino gratuito y la nutria al catálogo, y crea el inventario persistente de mascotas. También conserva en esa relación las mascotas iniciales, las ya seleccionadas y las que consten en compras anteriores. Aplica la sección completa en Neon antes de desplegar el backend actualizado.
 
 Comprueba la URL usando el verificador incluido (lee `.env` desde la raíz):
 
@@ -626,7 +626,9 @@ Los datos operativos se almacenan en PostgreSQL mediante `asyncpg`; `database/re
 
 La ruta de borrado obtiene el nombre de usuario de la sesión autenticada y ejecuta una sola sentencia parametrizada `DELETE` dentro de una transacción. Las FK `ON DELETE CASCADE` eliminan credenciales, mascota, monedero, compras, inventario, progreso y resultados relacionados. PostgreSQL revierte la sentencia completa si una restricción u operación falla. No se acepta un identificador de cuenta desde el navegador y no se añade esquema nuevo para esta funcionalidad.
 
-El final de `database/schema.sql` conserva las definiciones previas y añade una migración idempotente después de `-- CAMBIOS 2` para las especies y productos de mascotas disponibles.
+La tienda muestra las cuatro mascotas incluidas en el repositorio: pingüino (`pet.png`, gratis), oso (`oso.png`, 100 monedas), zorro (`zorro.png`, 150 monedas) y nutria (`nutria.png`, 125 monedas). Los precios de compra se leen de `producto`; el servidor no usa un precio enviado por el navegador. `mascota_desbloqueada` registra la propiedad de cada mascota por usuario y `mascota.especie` guarda la selección. Las compras descuentan el saldo, registran la compra y desbloquean la mascota dentro de una transacción; seleccionar una ya desbloqueada no vuelve a cobrarla.
+
+El final de `database/schema.sql` conserva las definiciones previas y añade, después de `-- CAMBIOS 2`, la relación idempotente de propiedad y una migración segura desde las mascotas seleccionadas y las compras existentes. Para bases Neon existentes, el administrador debe ejecutar esa sección completa en Neon antes de desplegar el backend actualizado; no se ejecuta una migración remota automáticamente.
 
 ## Créditos y bibliotecas utilizadas
 

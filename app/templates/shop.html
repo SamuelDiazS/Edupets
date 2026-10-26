@@ -45,6 +45,15 @@
                 <div>
                     <h2>{{ pet.name }}</h2>
                     <p>{{ pet.description }}</p>
+                    <p class="pet-ownership-status" data-pet-status="{{ pet.id }}">
+                        {% if user.pet_type == pet.id %}
+                        Mascota actual
+                        {% elif pet.id in user.owned_pets %}
+                        Desbloqueada
+                        {% else %}
+                        Disponible para comprar
+                        {% endif %}
+                    </p>
                 </div>
                 <div class="shop-buy-row">
                     <span><strong>{{ pet.price }}</strong> monedas</span>

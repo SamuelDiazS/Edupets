@@ -77,11 +77,10 @@ class DatabaseRepository:
 
 		owned_pet_rows = await pool.fetch(
 			"""
-			SELECT DISTINCT LOWER(p.nombre) AS tipo_mascota
-			FROM compra AS c
-			JOIN monedero AS w ON w.id_monedero = c.monedero_id
-			JOIN producto AS p ON p.id = c.producto_id
-			WHERE w.usuario_id = $1 AND LOWER(p.nombre) IN ('oso', 'zorro', 'nutria')
+			SELECT especie AS tipo_mascota
+			FROM mascota_desbloqueada
+			WHERE usuario_id = $1
+			ORDER BY especie
 			""",
 			row["usuario_id"],
 		)
@@ -141,7 +140,7 @@ class DatabaseRepository:
 			sleep=int(row["sueno"] if row["sueno"] is not None else 100),
 			pet_name=row["mascota"] or "Mi Mascota",
 			pet_type=row["tipo_mascota"] or "pinguino",
-			owned_pets=["pinguino", *[pet_row["tipo_mascota"] for pet_row in owned_pet_rows]],
+			owned_pets=[pet_row["tipo_mascota"] for pet_row in owned_pet_rows],
 			inventory=[
 				{"item_id": inventory_row["item_id"], "name": inventory_row["nombre"], "quantity": inventory_row["cantidad"]}
 				for inventory_row in inventory_rows
@@ -179,6 +178,10 @@ class DatabaseRepository:
 						"INSERT INTO monedero (usuario_id, saldo_plata) VALUES ($1, $2)",
 						user_id,
 						user.coins,
+					)
+					await connection.execute(
+						"INSERT INTO mascota_desbloqueada (usuario_id, especie) VALUES ($1, 'pinguino')",
+						user_id,
 					)
 		except asyncpg.UniqueViolationError as exc:
 			raise RepositoryError("Ese usuario ya existe.") from exc
@@ -420,6 +423,8 @@ class DatabaseRepository:
 			raise RepositoryError("No se pudo utilizar el producto.") from exc
 
 	async def purchase_pet(self, username: str, pet_id: str, pet_name: str) -> bool:
+		if pet_id not in {"pinguino", "oso", "zorro", "nutria"} or pet_name.casefold() != pet_id.casefold():
+			raise ValueError("Mascota no válida.")
 		pool = await self._get_pool()
 		try:
 			async with pool.acquire() as connection:
@@ -446,9 +451,14 @@ class DatabaseRepository:
 						raise RepositoryError("Falta ejecutar la migración SQL de mascotas en Neon.")
 
 					owned = await connection.fetchval(
-						"SELECT EXISTS (SELECT 1 FROM compra WHERE monedero_id = $1 AND producto_id = $2)",
-						row["id_monedero"],
-						product["id"],
+						"""
+						SELECT EXISTS (
+							SELECT 1 FROM mascota_desbloqueada
+							WHERE usuario_id = $1 AND especie = $2
+						)
+						""",
+						row["usuario_id"],
+						pet_id,
 					)
 					purchased = not owned
 					if purchased:
@@ -469,6 +479,15 @@ class DatabaseRepository:
 							"INSERT INTO compra (monedero_id, producto_id) VALUES ($1, $2)",
 							row["id_monedero"],
 							product["id"],
+						)
+						await connection.execute(
+							"""
+							INSERT INTO mascota_desbloqueada (usuario_id, especie)
+							VALUES ($1, $2)
+							ON CONFLICT (usuario_id, especie) DO NOTHING
+							""",
+							row["usuario_id"],
+							pet_id,
 						)
 
 					await connection.execute(
