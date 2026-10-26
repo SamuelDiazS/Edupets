@@ -147,3 +147,28 @@ async def logout(
     _delete_session_cookie(response)
     logger.info("Cierre de sesión completado para usuario %s", user.username)
     return response
+
+
+@router.post("/account/delete")
+async def delete_account(
+    request: Request,
+    user: UserRecord = Depends(get_current_user),
+    repo: DatabaseRepository = Depends(get_repository),
+):
+    await verify_csrf(request)
+    try:
+        deleted = await repo.delete_user(user.username)
+    except RepositoryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.",
+        ) from exc
+
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="La cuenta ya no está disponible.")
+
+    response = RedirectResponse("/?account_deleted=1", status_code=status.HTTP_303_SEE_OTHER)
+    _delete_session_cookie(response)
+    response.delete_cookie(get_settings().CSRF_COOKIE_NAME)
+    logger.info("Cuenta eliminada para usuario %s", user.username)
+    return response

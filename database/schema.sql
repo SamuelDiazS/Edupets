@@ -329,3 +329,6 @@ BEGIN
             CHECK (especie IN ('pinguino', 'oso', 'zorro'));
     END IF;
 END $$;
+
+-- CAMBIOS 2
+-- No se requieren cambios de esquema: usuario ya elimina en cascada sus datos asociados.

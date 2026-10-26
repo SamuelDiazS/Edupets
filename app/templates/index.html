@@ -3,6 +3,9 @@
 
 {% block content %}
 <section class="welcome-shell">
+    {% if request.query_params.get("account_deleted") == "1" %}
+        <p class="account-deleted-notice" role="status">Tu cuenta y los datos asociados se eliminaron correctamente.</p>
+    {% endif %}
     <div class="welcome-art">
         <img class="welcome-logo" src="{{ url_for('static', path='images/logo.png') }}" alt="Logo de Edupets">
         <img class="welcome-pet" src="{{ url_for('static', path=pet_image_path(user.pet_type if user else 'pinguino')) }}" alt="Mascota de Edupets">
@@ -17,6 +20,7 @@
                 <a class="primary-button" href="/login">Iniciar sesión</a>
                 <a class="secondary-button" href="/register">Registrarse</a>
             {% endif %}
+            <a class="secondary-button tutorial-button" href="https://youtu.be/9L-wekeTEOk?si=qEA2O17OXD61GGHb" target="_blank" rel="noopener noreferrer" aria-label="Aprende a usar EduPets (se abre en una pestaña nueva)">Aprende a usar EduPets</a>
         </div>
     </div>
 </section>

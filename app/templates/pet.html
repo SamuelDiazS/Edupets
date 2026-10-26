@@ -66,6 +66,27 @@
         <summary>Objetivos</summary>
         <div id="tasks-list" class="tasks-list"></div>
     </details>
+
+    <section class="account-danger-zone" aria-labelledby="account-danger-heading">
+        <div>
+            <h2 id="account-danger-heading">Zona de riesgo</h2>
+            <p>Eliminar tu cuenta borrará permanentemente tu perfil y los datos asociados.</p>
+        </div>
+        <button class="danger-button" type="button" data-open-delete-dialog>Borrar cuenta</button>
+    </section>
+
+    <dialog id="delete-account-dialog" class="account-dialog" aria-labelledby="delete-account-heading" aria-describedby="delete-account-description">
+        <form method="post" action="/account/delete" data-delete-account-form>
+            <h2 id="delete-account-heading">¿Borrar tu cuenta?</h2>
+            <p id="delete-account-description">Esta acción es permanente. Se eliminarán tu cuenta, tu mascota y todos los datos y registros asociados. No se puede deshacer.</p>
+            <p class="account-delete-error" role="alert" aria-live="assertive" data-delete-account-error hidden></p>
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            <div class="dialog-actions">
+                <button class="secondary-button" type="button" data-close-delete-dialog>Cancelar</button>
+                <button class="danger-button" type="submit" data-confirm-delete-account>Sí, borrar mi cuenta</button>
+            </div>
+        </form>
+    </dialog>
 </section>
 {% endblock %}
 

@@ -473,3 +473,183 @@ En general, la base de datos sirve como la estructura que permite que
 EduPets no sea solamente una página educativa, sino una plataforma capaz
 de **guardar el progreso y las acciones de cada usuario dentro de la
 experiencia de la mascota virtual**.
+
+------------------------------------------------------------------------
+
+# Guía de desarrollo y ejecución
+
+## Descripción del proyecto
+
+EduPets es una aplicación web educativa para practicar matemáticas mediante una experiencia de gamificación. Cada cuenta tiene una mascota virtual con niveles de comida, sueño y felicidad que disminuyen con el tiempo. El estudiante puede completar actividades, guardar resultados, ganar monedas, comprar objetos y otras mascotas, administrar su inventario y cuidar a su compañero.
+
+Las contraseñas se guardan como hashes bcrypt, no como texto legible. El estado persistente se carga y guarda en PostgreSQL; el navegador mantiene además una copia local de estado para la experiencia interactiva. La página de la mascota permite sincronizarla y usar los objetos disponibles.
+
+## Tecnologías y arquitectura
+
+- **Backend:** Python 3, FastAPI y ASGI. `app/main.py` crea la aplicación, registra las rutas, sirve los archivos estáticos y gestiona el contexto de sesión y CSRF. Las rutas se organizan en `app/routers/`; la lógica de autenticación, mascota, actividades y tienda está en `app/services/`.
+- **Datos y validación:** modelos Pydantic en `app/models/`, configuración mediante `pydantic-settings` en `app/config.py` y acceso asíncrono parametrizado a PostgreSQL con `asyncpg` en `database/repository.py`.
+- **Interfaz:** Jinja2 renderiza las páginas en `app/templates/`. CSS y JavaScript sin framework se encuentran en `app/static/`. `app/static/js/app.js` gestiona el tema, CSRF y estado compartido del navegador; los demás scripts controlan mascota, actividades y tienda.
+- **Persistencia:** PostgreSQL, recomendado a través de Neon. El esquema y sus relaciones están en `database/schema.sql`; el repositorio hace consultas SQL parametrizadas y transacciones para operaciones que modifican varios registros.
+- **Sesión y CSRF:** la sesión es un JWT firmado en una cookie `HttpOnly`; la identidad se vuelve a comprobar contra la base de datos. Las peticiones que modifican datos validan el token CSRF enviado junto con la cookie.
+- **Otras carpetas:** `database/queries.sql` contiene consultas SQL auxiliares; `scripts/generate_assets.py` genera recursos gráficos; `verify_config.py` comprueba la conexión configurada. `vercel.json` conserva la configuración de despliegue existente en Vercel.
+
+El esquema refleja el código actual: sus tablas son `usuario`, `credenciales`, `mascota`, `progreso`, `producto`, `ejercicio`, `monedero`, `compra`, `resultado` e `inventario`. `producto` y `ejercicio` son datos compartidos; las relaciones de cuenta usan cascadas para eliminar solo los registros propios. El esquema actual no define una tabla `examen`; algunas descripciones conceptuales anteriores de este README no corresponden a tablas activas.
+
+## Requisitos previos
+
+- Python **3.10 o posterior** y `pip`.
+- Git para clonar el repositorio.
+- Acceso de red a una base de datos PostgreSQL configurada. El código está preparado para Neon; también puede usarse PostgreSQL compatible.
+- `psql` (cliente PostgreSQL), solo si se aplicará `schema.sql` desde una terminal. No es necesario para ejecutar la aplicación una vez preparado el esquema.
+- Un navegador web moderno.
+
+No se necesita Node.js: el frontend usa JavaScript y CSS servidos por FastAPI.
+
+## Instalación y ejecución local
+
+### 1. Clonar y entrar al proyecto
+
+```sh
+git clone https://github.com/SamuelDiazS/Edupets.git
+cd Edupets
+```
+
+### 2. Crear y activar un entorno virtual
+
+Linux y macOS:
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Windows PowerShell:
+
+```powershell
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+En Windows, si PowerShell bloquea la activación, puede ejecutarse la aplicación usando directamente `.venv\Scripts\python.exe` sin cambiar la política del equipo.
+
+### 3. Instalar dependencias
+
+Con el entorno activado, en Linux/macOS:
+
+```sh
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+En Windows PowerShell, sustituye `python` por `py` en esos dos comandos.
+
+### 4. Configurar el entorno
+
+La aplicación lee un archivo `.env` en la raíz del repositorio. No hay un `.env.example` disponible en el árbol actual; crea `.env` localmente y no lo publiques. Como mínimo configura una URL válida de PostgreSQL:
+
+```dotenv
+DATABASE_URL=postgresql://USUARIO:CONTRASENA@HOST/BASE?sslmode=require
+```
+
+Configura `SECRET_KEY` con un valor aleatorio privado, especialmente fuera del entorno local. Puede generarse con Python:
+
+```sh
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+El proyecto reconoce las variables ya declaradas en `app/config.py`:
+
+| Variable | Uso |
+| --- | --- |
+| `DATABASE_URL` | Obligatoria para conectar con PostgreSQL/Neon. |
+| `SECRET_KEY` | Firma de los JWT; el valor predeterminado es solo para desarrollo y debe reemplazarse. |
+| `JWT_ALGORITHM` | Algoritmo de firma; predeterminado `HS256`. |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Duración del JWT y cookie, predeterminada a siete días. |
+| `COOKIE_NAME` | Nombre de la cookie de sesión. |
+| `COOKIE_SECURE` | Activa el atributo `Secure`; déjalo `false` en HTTP local y usa `true` bajo HTTPS. |
+| `CSRF_COOKIE_NAME` | Nombre de la cookie CSRF. |
+| `APP_NAME` | Nombre de la aplicación en FastAPI; predeterminado `Edupets`. |
+| `APP_ENV` | Entorno, predeterminado `development`; actualmente no activa lógica adicional. |
+
+Las variables no indicadas conservan los valores predeterminados de `app/config.py`. En Vercel, configura las mismas variables desde la configuración de entorno del proyecto; no incluyas credenciales en el repositorio ni cambies `vercel.json` para esta tarea.
+
+### 5. Preparar la base de datos
+
+1. Crea una base de datos PostgreSQL en Neon (o prepara una instancia PostgreSQL accesible) y copia su cadena de conexión en `DATABASE_URL`. En Neon utiliza la URL PostgreSQL ofrecida por el panel y conserva los parámetros SSL requeridos.
+2. Si el esquema aún no existe, ejecuta el archivo desde una terminal con `psql` y una variable de entorno temporal configurada con tu URL:
+
+Linux/macOS:
+
+```sh
+export DATABASE_URL='postgresql://USUARIO:CONTRASENA@HOST/BASE?sslmode=require'
+psql "$DATABASE_URL" -f database/schema.sql
+```
+
+Windows PowerShell:
+
+```powershell
+$env:DATABASE_URL = 'postgresql://USUARIO:CONTRASENA@HOST/BASE?sslmode=require'
+psql $env:DATABASE_URL -f database/schema.sql
+```
+
+Reemplaza los marcadores localmente; no uses una cadena de ejemplo como credencial. El cliente `psql` no carga automáticamente el archivo `.env`. También se puede ejecutar el contenido de `database/schema.sql` desde un editor SQL de Neon que admita el script completo.
+
+`schema.sql` crea las tablas, claves, restricciones, índices, vista y datos iniciales definidos por el proyecto. En instalaciones existentes, ejecutar SQL nuevo no cambia automáticamente la base remota: aplica el archivo o la migración correspondiente de forma explícita. Para esta mejora se añadió el marcador `-- CAMBIOS 2`, pero no se requieren instrucciones DDL ni una migración nueva, porque las claves foráneas actuales ya eliminan en cascada los datos asociados a una cuenta.
+
+Comprueba la URL usando el verificador incluido (lee `.env` desde la raíz):
+
+```sh
+python verify_config.py
+```
+
+### 6. Arrancar y abrir EduPets
+
+Desde la raíz y con el entorno virtual activado:
+
+```sh
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+En Windows se puede usar `py -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000`. Abre <http://127.0.0.1:8000> en el navegador. Para detener el servidor, pulsa `Ctrl+C` en la terminal.
+
+### Errores habituales
+
+- **Falta `DATABASE_URL` o falla la conexión:** confirma que `.env` está en la raíz, que la URL no contiene marcadores y que la base permite conexiones desde tu red. Neon requiere la conexión SSL indicada por su panel.
+- **No se encuentra una tabla o columna:** aplica `database/schema.sql` a la base configurada y verifica que la aplicación usa la misma base.
+- **`uvicorn` o un módulo no encontrado:** activa el entorno virtual e instala de nuevo con `python -m pip install -r requirements.txt`.
+- **El puerto 8000 está ocupado:** cambia `--port 8000` por otro puerto disponible y usa esa dirección al abrir el navegador.
+- **Falla `verify_config.py`:** ejecútalo desde la raíz del repositorio; verifica que `.env` tenga una línea `DATABASE_URL=...` y una URL PostgreSQL válida.
+
+## Base de datos y eliminación de cuentas
+
+Los datos operativos se almacenan en PostgreSQL mediante `asyncpg`; `database/repository.py` relaciona al usuario con credenciales, mascota, monedero e inventario, y los resultados/progresos pertenecen a la mascota. El campo de contraseña contiene el hash bcrypt. Las tablas `producto` y `ejercicio` son compartidas y no se eliminan al borrar una cuenta.
+
+La ruta de borrado obtiene el nombre de usuario de la sesión autenticada y ejecuta una sola sentencia parametrizada `DELETE` dentro de una transacción. Las FK `ON DELETE CASCADE` eliminan credenciales, mascota, monedero, compras, inventario, progreso y resultados relacionados. PostgreSQL revierte la sentencia completa si una restricción u operación falla. No se acepta un identificador de cuenta desde el navegador y no se añade esquema nuevo para esta funcionalidad.
+
+El final de `database/schema.sql` conserva todas sus definiciones previas y añade el comentario SQL exacto `-- CAMBIOS 2` seguido de una nota; no hay SQL adicional que aplicar para la eliminación de cuentas.
+
+## Créditos y bibliotecas utilizadas
+
+Las dependencias de terceros declaradas en `requirements.txt` y los paquetes de terceros importados por el código son:
+
+| Biblioteca | Función | Documentación oficial | Licencia upstream |
+| --- | --- | --- | --- |
+| FastAPI | Rutas HTTP, dependencias y aplicación ASGI. | [fastapi.tiangolo.com](https://fastapi.tiangolo.com/) | MIT |
+| Uvicorn | Servidor ASGI utilizado para ejecutar localmente la aplicación. | [uvicorn.org](https://www.uvicorn.org/) | BSD-3-Clause |
+| asyncpg | Cliente PostgreSQL asíncrono y pool de conexiones. | [Documentación asyncpg](https://magicstack.github.io/asyncpg/current/) | Apache-2.0 |
+| Loguru | Registro de eventos y errores del repositorio y dependencias. | [loguru.readthedocs.io](https://loguru.readthedocs.io/) | MIT |
+| Jinja2 | Renderizado de plantillas HTML. | [jinja.palletsprojects.com](https://jinja.palletsprojects.com/) | BSD-3-Clause |
+| Pydantic | Modelos y validación de datos. | [docs.pydantic.dev](https://docs.pydantic.dev/) | MIT |
+| pydantic-settings | Carga de configuración desde variables de entorno y `.env`. | [docs.pydantic.dev/latest/concepts/pydantic_settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) | MIT |
+| python-jose | Creación y validación de JWT de sesión. | [python-jose.readthedocs.io](https://python-jose.readthedocs.io/) | MIT |
+| cryptography | Backend criptográfico solicitado por el extra `python-jose[cryptography]`. | [cryptography.io](https://cryptography.io/en/latest/) | Apache-2.0 / BSD-3-Clause |
+| Passlib | Contexto de hash y verificación bcrypt de contraseñas. | [passlib.readthedocs.io](https://passlib.readthedocs.io/) | BSD-3-Clause |
+| bcrypt | Algoritmo/backend de hash usado por Passlib. | [bcrypt.readthedocs.io](https://bcrypt.readthedocs.io/) | Apache-2.0 |
+| python-multipart | Lectura de formularios enviados al backend. | [Documentación python-multipart](https://andrew-d.github.io/python-multipart/) | Apache-2.0 |
+| Starlette | Infraestructura ASGI usada internamente por FastAPI, incluida la integración de plantillas y archivos estáticos. | [www.starlette.io](https://www.starlette.io/) | BSD-3-Clause |
+
+Las restricciones de versión están en `requirements.txt`; `pydantic` y `uvicorn` se declaran explícitamente porque el código los importa o necesita para la ejecución local. FastAPI instala Starlette y las demás dependencias transitivas automáticamente. Los módulos de Python como `asyncio`, `logging`, `secrets`, `pathlib` y `json` pertenecen a la biblioteca estándar y no requieren instalación aparte.
+
+**Tecnologías y servicios, no bibliotecas:** Python, HTML, CSS y JavaScript; PostgreSQL como motor de base de datos; Neon como servicio PostgreSQL administrado ([documentación](https://neon.tech/docs)); Vercel como plataforma de despliegue configurada en `vercel.json` ([documentación](https://vercel.com/docs)); y YouTube para el video tutorial.
+
+**Autoría del proyecto:** se conserva el reconocimiento al repositorio [SamuelDiazS/Edupets](https://github.com/SamuelDiazS/Edupets). Los créditos anteriores de este README se mantienen sin sustituirlos.

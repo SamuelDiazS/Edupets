@@ -3,7 +3,7 @@ __pycache__/
 .venv/
 venv/
 .codex_deps/
-.env.example
+.env
 credentials/
 .vercel/
 .pytest_cache/

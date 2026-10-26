@@ -212,6 +212,20 @@ class DatabaseRepository:
 		except asyncpg.PostgresError as exc:
 			raise RepositoryError("No se pudo guardar el usuario.") from exc
 
+	async def delete_user(self, username: str) -> bool:
+		pool = await self._get_pool()
+		try:
+			async with pool.acquire() as connection:
+				async with connection.transaction():
+					deleted_id = await connection.fetchval(
+						"DELETE FROM usuario WHERE LOWER(nombre) = LOWER($1) RETURNING id",
+						username,
+					)
+			return deleted_id is not None
+		except (asyncpg.PostgresError, OSError) as exc:
+			logger.exception("No se pudo eliminar la cuenta del usuario %s", username)
+			raise RepositoryError("No se pudo eliminar la cuenta.") from exc
+
 	async def add_coins(self, username: str, amount: int) -> int:
 		if amount < 0:
 			raise ValueError("La recompensa no puede ser negativa.")

@@ -18,11 +18,57 @@
     const inventoryList = document.getElementById("inventory-items");
     const dropTarget = document.getElementById("pet-drop-target");
     const feedbackNode = document.getElementById("pet-feedback");
+    const deleteDialog = document.getElementById("delete-account-dialog");
+    const deleteForm = root.querySelector("[data-delete-account-form]");
+    const deleteError = root.querySelector("[data-delete-account-error]");
     let nameTimer = null;
     let syncInFlight = null;
     let lastBeaconAt = 0;
     let activePointer = null;
     let useInFlight = false;
+
+    root.querySelector("[data-open-delete-dialog]")?.addEventListener("click", () => {
+        deleteError.hidden = true;
+        deleteError.textContent = "";
+        deleteDialog.showModal();
+    });
+
+    root.querySelector("[data-close-delete-dialog]")?.addEventListener("click", () => {
+        deleteDialog.close();
+    });
+
+    deleteForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const confirmButton = deleteForm.querySelector("[data-confirm-delete-account]");
+        confirmButton.disabled = true;
+        deleteForm.setAttribute("aria-busy", "true");
+        deleteError.hidden = true;
+        deleteError.textContent = "";
+
+        try {
+            const response = await fetch(deleteForm.action, {
+                method: "POST",
+                credentials: "same-origin",
+                body: new FormData(deleteForm),
+            });
+            if (response.redirected) {
+                try {
+                    localStorage.removeItem(`edupets_state_${username}`);
+                } catch {
+                }
+                window.location.assign(response.url);
+                return;
+            }
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload.detail || "No se pudo eliminar la cuenta. Inténtalo de nuevo.");
+        } catch (error) {
+            deleteError.textContent = error.message;
+            deleteError.hidden = false;
+        } finally {
+            confirmButton.disabled = false;
+            deleteForm.removeAttribute("aria-busy");
+        }
+    });
 
     const inventoryImages = {
         pollo: "pescado.png",
