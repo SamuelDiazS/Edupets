@@ -47,20 +47,18 @@ PET_ITEMS: dict[str, dict[str, Any]] = {
     },
     "pinguino": {
         "id": "pinguino",
-        "name":"pinguino"
-        "database_name":"pinguino"
-        "image":"pet.png"
-        "description":"pinguino parchao y estudioso"   
-    }
-     "nutria":{
-     "id":"nutria"
-     "name":"nutria"
-     "database_name":"nutria"
-     "image":"nutria.png"
-     "description":"La nutria representa la alegría, la curiosidad, la adaptabilidad y la libertad junto a la salud de los ecosistemas acuaticos y el equilibrio natural el Colombia"
-    
-}
-
+        "name": "Pingüino",
+        "database_name": "pinguino",
+        "image": "pet.png",
+        "description": "Un compañero estudioso y siempre listo para aprender.",
+    },
+    "nutria": {
+        "id": "nutria",
+        "name": "Nutria",
+        "database_name": "nutria",
+        "image": "nutria.png",
+        "description": "La nutria representa la curiosidad, la adaptabilidad y el equilibrio de los ecosistemas acuáticos.",
+    },
 }
 
 

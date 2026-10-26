@@ -566,12 +566,12 @@ El proyecto reconoce las variables ya declaradas en `app/config.py`:
 | `JWT_ALGORITHM` | Algoritmo de firma; predeterminado `HS256`. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Duración del JWT y cookie, predeterminada a siete días. |
 | `COOKIE_NAME` | Nombre de la cookie de sesión. |
-| `COOKIE_SECURE` | Activa el atributo `Secure`; déjalo `false` en HTTP local y usa `true` bajo HTTPS. |
+| `COOKIE_SECURE` | Activa el atributo `Secure`; déjalo `false` en HTTP local y usa `true` bajo HTTPS. Se activa por defecto en Vercel Production/Preview y la aplicación no arranca en esos entornos si está desactivado. |
 | `CSRF_COOKIE_NAME` | Nombre de la cookie CSRF. |
 | `APP_NAME` | Nombre de la aplicación en FastAPI; predeterminado `Edupets`. |
-| `APP_ENV` | Entorno, predeterminado `development`; actualmente no activa lógica adicional. |
+| `APP_ENV` | Entorno; toma `VERCEL_ENV` en Vercel y usa `development` localmente. En `production`/`preview` exige un `SECRET_KEY` distinto al marcador inseguro y `COOKIE_SECURE=true`. |
 
-Las variables no indicadas conservan los valores predeterminados de `app/config.py`. En Vercel, configura las mismas variables desde la configuración de entorno del proyecto; no incluyas credenciales en el repositorio ni cambies `vercel.json` para esta tarea.
+Las variables no indicadas conservan los valores predeterminados de `app/config.py`. En Vercel, define un `SECRET_KEY` aleatorio y privado desde la configuración de entorno del proyecto; no incluyas credenciales en el repositorio ni cambies `vercel.json` para esta tarea.
 
 ### 5. Preparar la base de datos
 
@@ -594,7 +594,7 @@ psql $env:DATABASE_URL -f database/schema.sql
 
 Reemplaza los marcadores localmente; no uses una cadena de ejemplo como credencial. El cliente `psql` no carga automáticamente el archivo `.env`. También se puede ejecutar el contenido de `database/schema.sql` desde un editor SQL de Neon que admita el script completo.
 
-`schema.sql` crea las tablas, claves, restricciones, índices, vista y datos iniciales definidos por el proyecto. En instalaciones existentes, ejecutar SQL nuevo no cambia automáticamente la base remota: aplica el archivo o la migración correspondiente de forma explícita. Para esta mejora se añadió el marcador `-- CAMBIOS 2`, pero no se requieren instrucciones DDL ni una migración nueva, porque las claves foráneas actuales ya eliminan en cascada los datos asociados a una cuenta.
+`schema.sql` crea las tablas, claves, restricciones, índices, vista y datos iniciales definidos por el proyecto. En instalaciones existentes, ejecutar SQL nuevo no cambia automáticamente la base remota: aplica el archivo o la migración correspondiente de forma explícita. Después de `-- CAMBIOS 2`, el script actualiza de forma idempotente la restricción de especies, convierte el valor legado `predeterminada` a `pinguino`, exige precios y saldos enteros (como usa el modelo de monedas) y añade el pingüino gratuito y la nutria al catálogo. Aplica esa sección en Neon para alinear las especies y productos con el backend.
 
 Comprueba la URL usando el verificador incluido (lee `.env` desde la raíz):
 
@@ -626,7 +626,7 @@ Los datos operativos se almacenan en PostgreSQL mediante `asyncpg`; `database/re
 
 La ruta de borrado obtiene el nombre de usuario de la sesión autenticada y ejecuta una sola sentencia parametrizada `DELETE` dentro de una transacción. Las FK `ON DELETE CASCADE` eliminan credenciales, mascota, monedero, compras, inventario, progreso y resultados relacionados. PostgreSQL revierte la sentencia completa si una restricción u operación falla. No se acepta un identificador de cuenta desde el navegador y no se añade esquema nuevo para esta funcionalidad.
 
-El final de `database/schema.sql` conserva todas sus definiciones previas y añade el comentario SQL exacto `-- CAMBIOS 2` seguido de una nota; no hay SQL adicional que aplicar para la eliminación de cuentas.
+El final de `database/schema.sql` conserva las definiciones previas y añade una migración idempotente después de `-- CAMBIOS 2` para las especies y productos de mascotas disponibles.
 
 ## Créditos y bibliotecas utilizadas
 

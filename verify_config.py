@@ -11,7 +11,7 @@ import asyncpg
 def load_environment() -> dict[str, str]:
     env_file = Path(".env")
     if not env_file.exists():
-        raise RuntimeError("No se encontró archivo .env. Crea uno basado en .env.example.")
+        raise RuntimeError("No se encontró archivo .env. Créalo en la raíz con DATABASE_URL; consulta el README.")
 
     values: dict[str, str] = {}
     for line in env_file.read_text(encoding="utf-8").splitlines():
@@ -40,7 +40,7 @@ def check_environment() -> bool:
 
         asyncio.run(check_database(database_url))
     except (OSError, RuntimeError, asyncpg.PostgresError, ValueError) as exc:
-        print(f"No se pudo conectar con Neon: {exc}")
+        print(f"No se pudo conectar con Neon ({type(exc).__name__}). Verifica DATABASE_URL y los permisos.")
         return False
 
     print("Configuración de Neon verificada correctamente.")

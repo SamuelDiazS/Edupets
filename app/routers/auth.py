@@ -66,13 +66,14 @@ async def login(request: Request, repo: DatabaseRepository = Depends(get_reposit
         )
     except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-    except Exception as exc:
+    except Exception:
+        logger.exception("Error inesperado durante el inicio de sesión")
         return templates.TemplateResponse(
             "login.html",
             {
                 "request": request,
                 "title": "Iniciar sesión",
-                "error": f"Error en el servidor: {str(exc)}",
+                "error": "No se pudo iniciar sesión. Inténtalo de nuevo.",
                 "username": payload.get("username", ""),
             },
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -110,13 +111,14 @@ async def register(request: Request, repo: DatabaseRepository = Depends(get_repo
         )
     except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-    except Exception as exc:
+    except Exception:
+        logger.exception("Error inesperado durante el registro")
         return templates.TemplateResponse(
             "register.html",
             {
                 "request": request,
                 "title": "Registrarse",
-                "error": f"Error en el servidor: {str(exc)}",
+                "error": "No se pudo completar el registro. Inténtalo de nuevo.",
                 "username": payload.get("username", ""),
             },
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

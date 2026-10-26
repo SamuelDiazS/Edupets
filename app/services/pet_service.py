@@ -18,7 +18,7 @@ PET_IMAGES = {
     "pinguino": "images/pet.png",
     "oso": "images/oso.png",
     "zorro": "images/zorro.png",
-    "salmandra": "images/ nutria.png"
+    "nutria": "images/nutria.png",
 }
 
 

@@ -81,7 +81,7 @@ class DatabaseRepository:
 			FROM compra AS c
 			JOIN monedero AS w ON w.id_monedero = c.monedero_id
 			JOIN producto AS p ON p.id = c.producto_id
-			WHERE w.usuario_id = $1 AND p.nombre IN ('Oso', 'Zorro')
+			WHERE w.usuario_id = $1 AND LOWER(p.nombre) IN ('oso', 'zorro', 'nutria')
 			""",
 			row["usuario_id"],
 		)
@@ -141,7 +141,7 @@ class DatabaseRepository:
 			sleep=int(row["sueno"] if row["sueno"] is not None else 100),
 			pet_name=row["mascota"] or "Mi Mascota",
 			pet_type=row["tipo_mascota"] or "pinguino",
-			owned_pets=[pet_row["tipo_mascota"] for pet_row in owned_pet_rows],
+			owned_pets=["pinguino", *[pet_row["tipo_mascota"] for pet_row in owned_pet_rows]],
 			inventory=[
 				{"item_id": inventory_row["item_id"], "name": inventory_row["nombre"], "quantity": inventory_row["cantidad"]}
 				for inventory_row in inventory_rows

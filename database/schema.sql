@@ -331,4 +331,59 @@ BEGIN
 END $$;
 
 -- CAMBIOS 2
--- No se requieren cambios de esquema: usuario ya elimina en cascada sus datos asociados.
+-- Permite seleccionar nutria y restaura al pingüino inicial desde la tienda.
+DO $$
+DECLARE
+    species_constraint TEXT;
+BEGIN
+    SELECT pg_get_constraintdef(oid)
+    INTO species_constraint
+    FROM pg_constraint
+    WHERE conrelid = 'mascota'::regclass
+      AND conname = 'chk_mascota_especie';
+
+    IF species_constraint IS NULL
+       OR species_constraint NOT LIKE '%nutria%'
+       OR species_constraint LIKE '%predeterminada%' THEN
+        ALTER TABLE mascota DROP CONSTRAINT IF EXISTS chk_mascota_especie;
+        -- Older deployments used this value for the default penguin.
+        UPDATE mascota SET especie = 'pinguino' WHERE especie = 'predeterminada';
+        ALTER TABLE mascota
+            ADD CONSTRAINT chk_mascota_especie
+            CHECK (especie IN ('pinguino', 'oso', 'zorro', 'nutria'));
+    END IF;
+END $$;
+
+-- La aplicación representa precios y saldos como monedas enteras.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'producto'::regclass
+          AND conname = 'chk_producto_precio_entero'
+    ) THEN
+        ALTER TABLE producto
+            ADD CONSTRAINT chk_producto_precio_entero
+            CHECK (precio = trunc(precio));
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'monedero'::regclass
+          AND conname = 'chk_monedero_saldo_entero'
+    ) THEN
+        ALTER TABLE monedero
+            ADD CONSTRAINT chk_monedero_saldo_entero
+            CHECK (saldo_plata = trunc(saldo_plata));
+    END IF;
+END $$;
+
+INSERT INTO producto (nombre, precio)
+SELECT nuevo.nombre, nuevo.precio
+FROM (VALUES ('pinguino', 0), ('nutria', 125)) AS nuevo(nombre, precio)
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM producto AS existente
+    WHERE LOWER(existente.nombre) = LOWER(nuevo.nombre)
+)
+ON CONFLICT (nombre) DO NOTHING;
