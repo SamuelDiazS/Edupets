@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import get_settings
 from app.dependencies import get_repository, new_csrf_token, templates
 from database.repository import DatabaseRepository, RepositoryError
-from app.routers import activities, auth, pet, shop
+from app.routers import activities, auth, chatbot, pet, shop
 from app.utils.security import decode_access_token
 
 
@@ -33,6 +33,7 @@ app.include_router(auth.router)
 app.include_router(pet.router)
 app.include_router(activities.router)
 app.include_router(shop.router)
+app.include_router(chatbot.router)
 
 
 @app.middleware("http")

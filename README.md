@@ -568,10 +568,13 @@ El proyecto reconoce las variables ya declaradas en `app/config.py`:
 | `COOKIE_NAME` | Nombre de la cookie de sesión. |
 | `COOKIE_SECURE` | Activa el atributo `Secure`; déjalo `false` en HTTP local y usa `true` bajo HTTPS. Se activa por defecto en Vercel Production/Preview y la aplicación no arranca en esos entornos si está desactivado. |
 | `CSRF_COOKIE_NAME` | Nombre de la cookie CSRF. |
+| `GEMINI_API_KEY` | Clave privada de Google Gemini para el tutor de matemáticas. Es opcional para el resto del sitio. |
 | `APP_NAME` | Nombre de la aplicación en FastAPI; predeterminado `Edupets`. |
 | `APP_ENV` | Entorno; toma `VERCEL_ENV` en Vercel y usa `development` localmente. En `production`/`preview` exige un `SECRET_KEY` distinto al marcador inseguro y `COOKIE_SECURE=true`. |
 
 Las variables no indicadas conservan los valores predeterminados de `app/config.py`. En Vercel, define un `SECRET_KEY` aleatorio y privado desde la configuración de entorno del proyecto; no incluyas credenciales en el repositorio ni cambies `vercel.json` para esta tarea.
+
+Para activar el tutor, añade `GEMINI_API_KEY` al archivo `.env` local y a **Vercel > Settings > Environment Variables** para los entornos que correspondan. La clave solo se usa en el backend. El endpoint usa `gemini-2.5-flash`; la disponibilidad y cuota dependen del nivel gratuito vigente de Google AI Studio.
 
 ### 5. Preparar la base de datos
 

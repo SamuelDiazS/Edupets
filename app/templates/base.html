@@ -15,6 +15,7 @@
     </script>
     <link rel="icon" href="{{ url_for('static', path='images/logo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/chatbot.css') }}">
     {% block head %}{% endblock %}
 </head>
 <body class="{{ body_class | default('') }}">
@@ -50,7 +51,32 @@
         {% block content %}{% endblock %}
     </main>
 
+    <section class="math-chat" data-math-chat aria-label="Tutor de matemáticas">
+        <div id="math-chat-panel" class="math-chat-panel" data-chat-panel hidden>
+            <header class="math-chat-header">
+                <div>
+                    <h2 id="math-chat-title">Tutor de Matemáticas</h2>
+                    <p>Practiquemos paso a paso</p>
+                </div>
+                <button class="math-chat-close" type="button" data-chat-close aria-label="Cerrar chat">Cerrar</button>
+            </header>
+            <div class="math-chat-messages" data-chat-messages role="log" aria-live="polite" aria-relevant="additions text">
+                <p class="math-chat-bubble is-assistant">¡Hola! ¿Qué problema de matemáticas quieres resolver hoy?</p>
+            </div>
+            <p class="math-chat-status" data-chat-status role="status" aria-live="polite"></p>
+            <form class="math-chat-form" data-chat-form>
+                <label class="visually-hidden" for="math-chat-input">Escribe una pregunta de matemáticas</label>
+                <input id="math-chat-input" name="message" type="text" maxlength="500" autocomplete="off" placeholder="Escribe tu pregunta" required>
+                <button class="math-chat-send" type="submit" aria-label="Enviar mensaje">Enviar</button>
+            </form>
+        </div>
+        <button class="math-chat-toggle" type="button" data-chat-open aria-expanded="false" aria-controls="math-chat-panel">
+            <span aria-hidden="true">+</span> Tutor de Matemáticas
+        </button>
+    </section>
+
     <script src="{{ url_for('static', path='js/app.js') }}" defer></script>
+    <script src="{{ url_for('static', path='js/chatbot.js') }}" defer></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

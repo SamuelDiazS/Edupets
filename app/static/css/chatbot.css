@@ -1,0 +1,181 @@
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.math-chat {
+    position: fixed;
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(20px, env(safe-area-inset-bottom));
+    z-index: 30;
+    display: grid;
+    justify-items: end;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.math-chat button,
+.math-chat-panel {
+    pointer-events: auto;
+}
+
+.math-chat-toggle,
+.math-chat-send,
+.math-chat-close {
+    min-height: 46px;
+    border: 1px solid var(--primary-dark);
+    border-radius: 8px;
+    color: #ffffff;
+    background: var(--primary-dark);
+    font-weight: 900;
+}
+
+.math-chat-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    box-shadow: var(--shadow);
+}
+
+.math-chat-toggle span {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.math-chat-panel {
+    width: min(380px, calc(100vw - 28px));
+    height: min(520px, calc(100dvh - 100px));
+    min-height: 340px;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    background: var(--panel);
+    box-shadow: var(--shadow);
+}
+
+.math-chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    color: #ffffff;
+    background: var(--primary-dark);
+}
+
+.math-chat-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.math-chat-header p {
+    margin: 3px 0 0;
+    font-size: 0.85rem;
+}
+
+.math-chat-close {
+    min-height: 38px;
+    padding: 0 10px;
+    border-color: rgba(255, 255, 255, 0.65);
+    background: transparent;
+}
+
+.math-chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    padding: 14px;
+    overscroll-behavior: contain;
+}
+
+.math-chat-bubble {
+    max-width: 88%;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.math-chat-bubble.is-assistant {
+    align-self: flex-start;
+    background: var(--panel-soft);
+}
+
+.math-chat-bubble.is-user {
+    align-self: flex-end;
+    color: #ffffff;
+    background: var(--primary-dark);
+}
+
+.math-chat-bubble.is-typing {
+    color: var(--muted);
+    font-style: italic;
+}
+
+.math-chat-status {
+    min-height: 1.25em;
+    margin: 0;
+    padding: 0 14px;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.math-chat-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid var(--line);
+}
+
+.math-chat-form input {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 11px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--ink);
+    background: var(--input-bg);
+}
+
+.math-chat-send {
+    padding: 0 14px;
+}
+
+.math-chat button:focus-visible,
+.math-chat-form input:focus-visible {
+    outline: 3px solid var(--yellow);
+    outline-offset: 2px;
+}
+
+.math-chat button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+@media (max-width: 560px) {
+    .math-chat {
+        right: max(12px, env(safe-area-inset-right));
+        bottom: max(12px, env(safe-area-inset-bottom));
+    }
+
+    .math-chat-panel {
+        width: min(380px, calc(100vw - 24px));
+        height: min(520px, calc(100dvh - 90px));
+    }
+}
