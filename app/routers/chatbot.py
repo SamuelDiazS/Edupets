@@ -11,6 +11,8 @@ from app.dependencies import verify_csrf
 from app.services.chatbot_service import (
     CLARIFICATION_REPLY,
     OUT_OF_SCOPE_REPLY,
+    GeminiConfigurationError,
+    GeminiModelError,
     GeminiQuotaError,
     GeminiRequestError,
     GeminiUnavailableError,
@@ -123,6 +125,16 @@ async def chat(request: Request):
 
     try:
         reply = await generate_tutor_reply(chat_request.message, math_history, api_key)
+    except GeminiConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No se pudo validar la conexión con Gemini. Revisa GEMINI_API_KEY en Vercel y vuelve a desplegar.",
+        ) from exc
+    except GeminiModelError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="El modelo del tutor no está disponible. Revisa la configuración del modelo en el backend.",
+        ) from exc
     except GeminiQuotaError as exc:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,

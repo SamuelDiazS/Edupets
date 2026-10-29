@@ -1,3 +1,4 @@
+import logging
 import re
 import unicodedata
 
@@ -6,6 +7,7 @@ from google.genai import errors, types
 
 
 GEMINI_MODEL = "gemini-2.5-flash"
+logger = logging.getLogger(__name__)
 
 
 class GeminiQuotaError(Exception):
@@ -17,6 +19,14 @@ class GeminiUnavailableError(Exception):
 
 
 class GeminiRequestError(Exception):
+    pass
+
+
+class GeminiConfigurationError(Exception):
+    pass
+
+
+class GeminiModelError(Exception):
     pass
 
 
@@ -135,12 +145,18 @@ async def generate_tutor_reply(message: str, history: list[str], api_key: str) -
         )
     except errors.APIError as exc:
         status_code = getattr(exc, "code", None)
+        logger.warning("Gemini API request failed with HTTP status %s", status_code)
+        if status_code in {401, 403}:
+            raise GeminiConfigurationError from exc
+        if status_code == 404:
+            raise GeminiModelError from exc
         if status_code == 429:
             raise GeminiQuotaError from exc
         if status_code in {500, 502, 503, 504}:
             raise GeminiUnavailableError from exc
         raise GeminiRequestError from exc
     except Exception as exc:
+        logger.warning("Gemini SDK or connection failed (%s)", type(exc).__name__)
         raise GeminiUnavailableError from exc
     finally:
         if client is not None:

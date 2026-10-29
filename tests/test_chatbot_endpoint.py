@@ -6,7 +6,12 @@ import httpx
 
 from app.main import app
 from app.routers import chatbot
-from app.services.chatbot_service import GeminiQuotaError, GeminiUnavailableError
+from app.services.chatbot_service import (
+    GeminiConfigurationError,
+    GeminiModelError,
+    GeminiQuotaError,
+    GeminiUnavailableError,
+)
 
 
 class ChatbotEndpointTests(unittest.IsolatedAsyncioTestCase):
@@ -102,6 +107,18 @@ class ChatbotEndpointTests(unittest.IsolatedAsyncioTestCase):
         unavailable = await self.post_chat({"message": "¿Cuánto es 2 + 3?"})
         self.assertEqual(unavailable.status_code, 503)
         self.assertNotIn("private provider detail", unavailable.text)
+
+    async def test_provider_configuration_errors_are_actionable_and_secret_free(self):
+        for error, expected_message in (
+            (GeminiConfigurationError("private key detail"), "GEMINI_API_KEY"),
+            (GeminiModelError("private model detail"), "modelo del tutor"),
+        ):
+            with self.subTest(error=type(error).__name__):
+                self.generate_reply.side_effect = error
+                response = await self.post_chat({"message": "¿Cuánto es 2 + 3?"})
+                self.assertEqual(response.status_code, 503)
+                self.assertIn(expected_message, response.json()["detail"])
+                self.assertNotIn("private", response.text)
 
     async def test_per_ip_rate_limit_stops_repeated_requests(self):
         for _ in range(chatbot.MAX_MESSAGES_PER_MINUTE):
