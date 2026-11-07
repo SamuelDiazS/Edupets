@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections import defaultdict
 from typing import Any
 
@@ -18,24 +19,40 @@ class DatabaseRepository:
 	def __init__(self, settings: Settings):
 		self.settings = settings
 		self._pool: asyncpg.Pool | None = None
+		self._pool_lock = asyncio.Lock()
 
 	async def connect(self) -> None:
-		if self._pool is not None:
-			return
-		if not self.settings.DATABASE_URL:
-			raise RepositoryError("DATABASE_URL es obligatorio para conectar con Neon.")
-		try:
-			self._pool = await asyncpg.create_pool(self.settings.DATABASE_URL, min_size=1, max_size=5)
-			await self._pool.fetchval("SELECT 1")
+		async with self._pool_lock:
+			if self._pool is not None:
+				return
+			if not self.settings.DATABASE_URL:
+				raise RepositoryError("DATABASE_URL es obligatorio para conectar con Neon.")
+
+			pool: asyncpg.Pool | None = None
+			try:
+				pool = await asyncpg.create_pool(self.settings.DATABASE_URL, min_size=1, max_size=5)
+				await pool.fetchval("SELECT 1")
+			except Exception as exc:
+				if pool is not None:
+					try:
+						await pool.close()
+					except Exception as close_exc:
+						logger.error("No se pudo limpiar el pool fallido ({})", type(close_exc).__name__)
+				logger.error("No se pudo conectar con Neon ({})", type(exc).__name__)
+				raise RepositoryError("No se pudo conectar con la base de datos.") from None
+
+			self._pool = pool
 			logger.info("Conexión con Neon establecida")
-		except (asyncpg.PostgresError, OSError, ValueError) as exc:
-			self._pool = None
-			logger.exception("No se pudo conectar con Neon")
-			raise RepositoryError("No se pudo conectar con la base de datos.") from exc
 
 	async def close(self) -> None:
-		if self._pool is not None:
-			await self._pool.close()
+		async with self._pool_lock:
+			if self._pool is None:
+				return
+			try:
+				await self._pool.close()
+			except Exception as exc:
+				logger.error("No se pudo cerrar el pool ({})", type(exc).__name__)
+				raise RepositoryError("No se pudo cerrar el pool de base de datos.") from None
 			self._pool = None
 
 	async def _get_pool(self) -> asyncpg.Pool:
@@ -48,8 +65,9 @@ class DatabaseRepository:
 		pool = await self._get_pool()
 		try:
 			await pool.fetchval("SELECT 1")
-		except asyncpg.PostgresError as exc:
-			raise RepositoryError("La base de datos no está disponible.") from exc
+		except Exception as exc:
+			logger.error("Falló la comprobación de la base de datos ({})", type(exc).__name__)
+			raise RepositoryError("La base de datos no está disponible.") from None
 
 	@staticmethod
 	def _module_key(value: str) -> str:
@@ -226,8 +244,8 @@ class DatabaseRepository:
 					)
 			return deleted_id is not None
 		except (asyncpg.PostgresError, OSError) as exc:
-			logger.exception("No se pudo eliminar la cuenta del usuario %s", username)
-			raise RepositoryError("No se pudo eliminar la cuenta.") from exc
+			logger.error("No se pudo eliminar la cuenta ({})", type(exc).__name__)
+			raise RepositoryError("No se pudo eliminar la cuenta.") from None
 
 	async def add_coins(self, username: str, amount: int) -> int:
 		if amount < 0:

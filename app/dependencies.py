@@ -82,7 +82,7 @@ async def get_current_user(
     except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except Exception as exc:
-        logger.exception("Error obteniendo el usuario autenticado %s", username)
+        logger.error("Error obteniendo el usuario autenticado (%s)", type(exc).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="No se pudo cargar la sesión.",

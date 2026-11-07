@@ -540,7 +540,7 @@ En Windows PowerShell, sustituye `python` por `py` en esos dos comandos.
 
 ### 4. Configurar el entorno
 
-La aplicación lee un archivo `.env` en la raíz del repositorio. No hay un `.env.example` disponible en el árbol actual; crea `.env` localmente y no lo publiques. Como mínimo configura una URL válida de PostgreSQL:
+En desarrollo local, `pydantic-settings` lee `.env` desde la raíz del repositorio; el archivo está excluido de Git por `.gitignore`. Las variables del proceso tienen prioridad sobre `.env`. En Vercel, la aplicación no carga `.env`: configura las variables desde **Project > Settings > Environment Variables** para cada entorno y vuelve a desplegar. Como mínimo, configura una URL válida de PostgreSQL localmente:
 
 ```dotenv
 DATABASE_URL=postgresql://USUARIO:CONTRASENA@HOST/BASE?sslmode=require
@@ -567,7 +567,7 @@ El proyecto reconoce las variables ya declaradas en `app/config.py`:
 | `APP_NAME` | Nombre de la aplicación en FastAPI; predeterminado `Edupets`. |
 | `APP_ENV` | Entorno; toma `VERCEL_ENV` en Vercel y usa `development` localmente. En `production`/`preview` exige un `SECRET_KEY` distinto al marcador inseguro y `COOKIE_SECURE=true`. |
 
-Las variables no indicadas conservan los valores predeterminados de `app/config.py`. En Vercel, define un `SECRET_KEY` aleatorio y privado desde la configuración de entorno del proyecto; no incluyas credenciales en el repositorio ni cambies `vercel.json` para esta tarea.
+Las variables no indicadas conservan los valores predeterminados de `app/config.py`. En Vercel configura `DATABASE_URL`, `SECRET_KEY` y `COOKIE_SECURE=true` en Production y Preview; la aplicación exige una clave de al menos 32 caracteres y cookies seguras en esos entornos. No incluyas credenciales en el repositorio. Usa la URL PostgreSQL copiada desde Neon, incluida su opción `sslmode=require`; asyncpg acepta ese formato de conexión.
 
 Para activar el tutor, añade `GEMINI_API_KEY` al archivo `.env` local y a **Vercel > Settings > Environment Variables** para los entornos que correspondan. La clave solo se usa en el backend. El endpoint usa `gemini-2.5-flash`; la disponibilidad y cuota dependen del nivel gratuito vigente de Google AI Studio.
 

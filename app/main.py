@@ -102,7 +102,12 @@ async def redirect_exception_handler(request: Request, exc):  # pragma: no cover
 
 @app.exception_handler(Exception)
 async def unexpected_exception_handler(request: Request, exc: Exception):
-    logger.exception("Error no controlado en %s %s", request.method, request.url.path)
+    logger.error(
+        "Error no controlado en %s %s (%s)",
+        request.method,
+        request.url.path,
+        type(exc).__name__,
+    )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "Error interno del servidor."},

@@ -66,8 +66,8 @@ async def login(request: Request, repo: DatabaseRepository = Depends(get_reposit
         )
     except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-    except Exception:
-        logger.exception("Error inesperado durante el inicio de sesión")
+    except Exception as exc:
+        logger.error("Error inesperado durante el inicio de sesión (%s)", type(exc).__name__)
         return templates.TemplateResponse(
             "login.html",
             {
@@ -111,8 +111,8 @@ async def register(request: Request, repo: DatabaseRepository = Depends(get_repo
         )
     except RepositoryError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-    except Exception:
-        logger.exception("Error inesperado durante el registro")
+    except Exception as exc:
+        logger.error("Error inesperado durante el registro (%s)", type(exc).__name__)
         return templates.TemplateResponse(
             "register.html",
             {
