@@ -273,10 +273,6 @@ main {
     text-align: center;
 }
 
-.tutorial-button {
-    text-align: center;
-}
-
 .auth-shell {
     min-height: calc(100vh - 72px);
     display: grid;

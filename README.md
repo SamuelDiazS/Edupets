@@ -1,8 +1,3 @@
-# Documentación de la base de datos --- EduPets
-
-## Video explicativo
-- https://youtu.be/9L-wekeTEOk?si=qEA2O17OXD61GGHb
-
 ## 1. Breve resumen del proyecto
 
 **EduPets** es una plataforma web educativa que busca hacer más
